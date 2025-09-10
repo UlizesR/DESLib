@@ -1,37 +1,33 @@
 #include "assembly_vm.h"
 
-// Instruction metadata table - replaces string-based parsing
 static const instruction_metadata_t instruction_table[] = {
-    [INST_MOV] = {"MOV", 2, 0},                    // Data movement
-    [INST_ADD] = {"ADD", 3, INST_FLAG_ARITHMETIC}, // Arithmetic
-    [INST_SUB] = {"SUB", 3, INST_FLAG_ARITHMETIC}, // Arithmetic
-    [INST_MUL] = {"MUL", 3, INST_FLAG_ARITHMETIC}, // Arithmetic
-    [INST_DIV] = {"DIV", 3, INST_FLAG_ARITHMETIC}, // Arithmetic
-    [INST_LOAD] = {"LOAD", 2, INST_FLAG_MEMORY},   // Memory access
-    [INST_STORE] = {"STORE", 2, INST_FLAG_MEMORY}, // Memory access
-    [INST_JMP] = {"JMP", 1, INST_FLAG_JUMP},       // Control flow
-    [INST_JZ] = {"JZ", 1, INST_FLAG_JUMP},         // Control flow
-    [INST_JNZ] = {"JNZ", 1, INST_FLAG_JUMP},       // Control flow
-    [INST_PUSH] = {"PUSH", 1, INST_FLAG_MEMORY},   // Stack operation
-    [INST_POP] = {"POP", 1, INST_FLAG_MEMORY},     // Stack operation
-    [INST_PRINT] = {"PRINT", 1, INST_FLAG_IO},     // I/O operation
-    [INST_INPUT] = {"INPUT", 1, INST_FLAG_IO},     // I/O operation
-    [INST_CMP] = {"CMP", 2, INST_FLAG_ARITHMETIC}, // Comparison
-    [INST_HALT] = {"HALT", 0, 0},                  // System
-    [INST_NOP] = {"NOP", 0, 0},                    // System
-    [INST_UNKNOWN] = {NULL, 0, 0}                  // Unknown
-};
+    [INST_MOV] = {"MOV", 2, 0},
+    [INST_ADD] = {"ADD", 3, INST_FLAG_ARITHMETIC},
+    [INST_SUB] = {"SUB", 3, INST_FLAG_ARITHMETIC},
+    [INST_MUL] = {"MUL", 3, INST_FLAG_ARITHMETIC},
+    [INST_DIV] = {"DIV", 3, INST_FLAG_ARITHMETIC},
+    [INST_LOAD] = {"LOAD", 2, INST_FLAG_MEMORY},
+    [INST_STORE] = {"STORE", 2, INST_FLAG_MEMORY},
+    [INST_JMP] = {"JMP", 1, INST_FLAG_JUMP},
+    [INST_JZ] = {"JZ", 1, INST_FLAG_JUMP},
+    [INST_JNZ] = {"JNZ", 1, INST_FLAG_JUMP},
+    [INST_PUSH] = {"PUSH", 1, INST_FLAG_MEMORY},
+    [INST_POP] = {"POP", 1, INST_FLAG_MEMORY},
+    [INST_PRINT] = {"PRINT", 1, INST_FLAG_IO},
+    [INST_PRINTS] = {"PRINTS", 1, INST_FLAG_IO},
+    [INST_INPUT] = {"INPUT", 1, INST_FLAG_IO},
+    [INST_CMP] = {"CMP", 2, INST_FLAG_ARITHMETIC},
+    [INST_HALT] = {"HALT", 0, 0},
+    [INST_NOP] = {"NOP", 0, 0},
+    [INST_UNKNOWN] = {NULL, 0, 0}};
 
-// Arithmetic operation functions
 static int32_t add_op(int32_t a, int32_t b) { return a + b; }
 static int32_t sub_op(int32_t a, int32_t b) { return a - b; }
 static int32_t mul_op(int32_t a, int32_t b) { return a * b; }
 static int32_t div_op(int32_t a, int32_t b) { return (b != 0) ? a / b : 0; }
 
-// Global hash table for instruction lookup
 static vm_hash_table_t *instruction_hash_table = NULL;
 
-// Initialize instruction hash table
 static void init_instruction_hash_table(void) {
   if (instruction_hash_table)
     return;
@@ -40,7 +36,6 @@ static void init_instruction_hash_table(void) {
   if (!instruction_hash_table)
     return;
 
-  // Populate hash table with all instructions
   for (int i = 0; i < INST_UNKNOWN; i++) {
     if (instruction_table[i].mnemonic) {
       vm_hash_table_insert(instruction_hash_table,
@@ -49,76 +44,38 @@ static void init_instruction_hash_table(void) {
   }
 }
 
-// Create a new virtual machine
 vm_t *vm_create(void) {
   vm_t *vm = (vm_t *)malloc(sizeof(vm_t));
   if (!vm)
     return NULL;
 
-  // Initialize hash table if not already done
   init_instruction_hash_table();
-
-  // Initialize error state
   vm_clear_error(&vm->last_error);
-
-  // Set hash table reference
   vm->instruction_hash_table = instruction_hash_table;
-
   vm_reset(vm);
   return vm;
 }
 
-// Destroy virtual machine
 void vm_destroy(vm_t *vm) {
   if (vm) {
     free(vm);
   }
 }
 
-/**
- * Reset virtual machine to initial state
- *
- * This function initializes all VM components to their default values:
- * - Clears all registers to zero
- * - Clears all memory to zero
- * - Sets stack pointer to top of memory (stack grows downward)
- * - Resets program counter to start of program
- * - Clears all status flags
- * - Resets program and label tables
- * - Sets verbose mode to off by default
- */
 void vm_reset(vm_t *vm) {
-  memset(vm->registers, 0, sizeof(vm->registers)); // Clear all registers
-  memset(vm->memory, 0, sizeof(vm->memory));       // Clear all memory
-  vm->stack_pointer = MEMORY_SIZE - 1;       // Stack grows downward from top
-  vm->program_counter = 0;                   // Start at first instruction
-  vm->status_flags = 0;                      // Clear all status flags
-  vm->program_size = 0;                      // No instructions loaded
-  vm->running = 0;                           // VM is stopped
-  vm->num_labels = 0;                        // No labels defined
-  vm->verbose = 0;                           // Verbose mode off by default
-  memset(vm->labels, 0, sizeof(vm->labels)); // Clear label table
-
-  // Clear error state
+  memset(vm->registers, 0, sizeof(vm->registers));
+  memset(vm->memory, 0, sizeof(vm->memory));
+  vm->stack_pointer = MEMORY_SIZE - 1;
+  vm->program_counter = 0;
+  vm->status_flags = 0;
+  vm->program_size = 0;
+  vm->running = 0;
+  vm->num_labels = 0;
+  vm->verbose = 0;
+  memset(vm->labels, 0, sizeof(vm->labels));
   vm_clear_error(&vm->last_error);
 }
 
-/**
- * Parse instruction mnemonic string to instruction type
- *
- * This function converts assembly language mnemonics (like "MOV", "ADD")
- * into internal instruction type constants. It performs case-sensitive
- * string matching against all supported instruction types.
- *
- * @param mnemonic The instruction mnemonic string (e.g., "MOV", "ADD")
- * @return The corresponding instruction_type_t, or INST_UNKNOWN if not found
- */
-/**
- * Get instruction metadata by type
- *
- * @param type The instruction type
- * @return Pointer to instruction metadata, or NULL if invalid type
- */
 const instruction_metadata_t *
 get_instruction_metadata(instruction_type_t type) {
   if (type < 0 || type >= INST_UNKNOWN) {
@@ -128,7 +85,6 @@ get_instruction_metadata(instruction_type_t type) {
 }
 
 instruction_type_t parse_instruction(const char *mnemonic) {
-  // Use hash table for O(1) lookup
   if (instruction_hash_table) {
     void *result = vm_hash_table_lookup(instruction_hash_table, mnemonic);
     if (result) {
@@ -136,67 +92,55 @@ instruction_type_t parse_instruction(const char *mnemonic) {
     }
   }
 
-  // Fallback to linear search if hash table not available
   for (int i = 0; i < INST_UNKNOWN; i++) {
     if (instruction_table[i].mnemonic &&
         strcmp(mnemonic, instruction_table[i].mnemonic) == 0) {
       return (instruction_type_t)i;
     }
   }
-  return INST_UNKNOWN; // Instruction not recognized
+  return INST_UNKNOWN;
 }
 
-/**
- * Parse operand string into operand structure
- *
- * This function analyzes a string operand and determines its type and value.
- * It supports four types of operands:
- * - Registers: R0, R1, R2, etc.
- * - Memory addresses: [100], [R1]
- * - Immediate values: #42, 123, -5
- * - Labels: start, loop, end
- *
- * @param str The operand string to parse
- * @return operand_t structure with type and value information
- */
 operand_t parse_operand(const char *str) {
   operand_t op = {0};
 
-  // Skip leading whitespace
   while (isspace(*str))
     str++;
 
   if (str[0] == 'R' && isdigit(str[1])) {
-    // Register operand: R0, R1, R2, etc.
     op.type = OP_REGISTER;
-    op.reg = str[1] - '0'; // Convert ASCII digit to integer
-  } else if (str[0] == '[' && str[strlen(str) - 1] == ']') {
-    // Memory operand: [R1] or [123]
+    op.reg = str[1] - '0';
+  } else if (str[0] == '[') {
     op.type = OP_MEMORY;
-    char *inner = strdup(str + 1);   // Copy string without brackets
-    inner[strlen(inner) - 1] = '\0'; // Remove closing bracket
-
-    if (inner[0] == 'R' && isdigit(inner[1])) {
-      // Register indirect: [R1]
-      op.reg = inner[1] - '0';
-    } else {
-      // Direct address: [123]
-      op.value = atoi(inner);
+    const char *end = strchr(str, ']');
+    if (end && end > str + 1) {
+      size_t len = end - str - 1;
+      if (str[1] == 'R' && isdigit(str[2]) && len == 2) {
+        op.reg = str[2] - '0';
+      } else {
+        char temp[16];
+        strncpy(temp, str + 1, len);
+        temp[len] = '\0';
+        op.value = atoi(temp);
+      }
     }
-    free(inner);
   } else if (str[0] == '#') {
-    // Immediate value with # prefix: #123
     op.type = OP_IMMEDIATE;
-    op.value = atoi(str + 1); // Skip the '#' character
+    op.value = atoi(str + 1);
+  } else if (str[0] == '"' && str[strlen(str) - 1] == '"') {
+    op.type = OP_STRING;
+    size_t len = strlen(str) - 2;
+    if (len >= MAX_LINE_LENGTH)
+      len = MAX_LINE_LENGTH - 1;
+    strncpy(op.string, str + 1, len);
+    op.string[len] = '\0';
   } else if (isdigit(str[0]) || str[0] == '-') {
-    // Immediate value without # prefix: 123, -5
     op.type = OP_IMMEDIATE;
     op.value = atoi(str);
   } else {
-    // Label: start, loop, end, etc.
     op.type = OP_LABEL;
     strncpy(op.label, str, MAX_LABEL_LENGTH - 1);
-    op.label[MAX_LABEL_LENGTH - 1] = '\0'; // Ensure null termination
+    op.label[MAX_LABEL_LENGTH - 1] = '\0';
   }
 
   return op;
@@ -232,14 +176,38 @@ int parse_assembly_line(const char *line, instruction_t *inst) {
     return 0;
   }
 
-  // Tokenize
+  // Tokenize with proper string handling
   char *tokens[4];
   int token_count = 0;
-  char *token = strtok(start, " \t,");
+  char *pos = start;
 
-  while (token && token_count < 4) {
-    tokens[token_count++] = token;
-    token = strtok(NULL, " \t,");
+  while (*pos && token_count < 4) {
+    // Skip whitespace
+    while (*pos && isspace(*pos))
+      pos++;
+    if (!*pos)
+      break;
+
+    if (*pos == '"') {
+      // Handle quoted string
+      tokens[token_count] = pos;
+      pos++; // Skip opening quote
+      while (*pos && *pos != '"')
+        pos++;
+      if (*pos == '"')
+        pos++; // Skip closing quote
+      token_count++;
+    } else {
+      // Handle regular token
+      tokens[token_count] = pos;
+      while (*pos && !isspace(*pos) && *pos != ',')
+        pos++;
+      if (*pos) {
+        *pos = '\0';
+        pos++;
+      }
+      token_count++;
+    }
   }
 
   if (token_count == 0)
@@ -297,6 +265,7 @@ int parse_assembly_line(const char *line, instruction_t *inst) {
   case INST_PUSH:
   case INST_POP:
   case INST_PRINT:
+  case INST_PRINTS:
   case INST_INPUT:
     if (token_count >= 2) {
       inst->operands[0] = parse_operand(tokens[1]);
@@ -324,21 +293,6 @@ int parse_assembly_line(const char *line, instruction_t *inst) {
   return 1;
 }
 
-/**
- * Execute a single instruction
- *
- * This is the core function that executes individual assembly instructions.
- * It implements the decode and execute phases of the CPU cycle, handling
- * all supported instruction types including arithmetic, memory operations,
- * control flow, and I/O operations.
- *
- * The function performs operand resolution, executes the operation,
- * updates status flags where appropriate, and handles error conditions.
- *
- * @param vm Virtual machine instance
- * @param inst The instruction to execute
- * @return 1 on success, 0 on error
- */
 int vm_execute_instruction(vm_t *vm, instruction_t *inst) {
   // Pre-execution validation
   vm_validation_result_t validation =
@@ -388,6 +342,9 @@ int vm_execute_instruction(vm_t *vm, instruction_t *inst) {
   case INST_PRINT:
     return handle_print(vm, inst);
 
+  case INST_PRINTS:
+    return handle_prints(vm, inst);
+
   case INST_INPUT:
     return handle_input(vm, inst);
 
@@ -405,30 +362,9 @@ int vm_execute_instruction(vm_t *vm, instruction_t *inst) {
     return 0;
   }
 
-  // Update status flags for arithmetic instructions
-  if (inst->type >= INST_ADD && inst->type <= INST_DIV) {
-    set_status_flags(vm, vm->registers[inst->operands[0].reg]);
-  }
-
   return 1;
 }
 
-/**
- * Run the virtual machine continuously
- *
- * This function executes the loaded program from start to finish. It follows
- * the classic fetch-decode-execute cycle:
- * 1. Fetch the current instruction
- * 2. Execute the instruction
- * 3. Update the program counter (unless a jump occurred)
- * 4. Repeat until HALT or error
- *
- * The function handles jump instructions by checking if the program counter
- * was modified during execution, and only auto-increments if no jump
- * occurred.
- *
- * @param vm Virtual machine instance to run
- */
 void vm_run(vm_t *vm) {
   vm->running = 1;         // Mark VM as running
   vm->program_counter = 0; // Start at first instruction
@@ -538,6 +474,14 @@ void vm_step(vm_t *vm) {
       printf("#%d", inst->operands[0].value);
     }
     break;
+  case INST_PRINTS:
+    printf("PRINTS ");
+    if (inst->operands[0].type == OP_STRING) {
+      printf("\"%s\"", inst->operands[0].string);
+    } else if (inst->operands[0].type == OP_REGISTER) {
+      printf("R%d", inst->operands[0].reg);
+    }
+    break;
   case INST_INPUT:
     printf("INPUT R%d", inst->operands[0].reg);
     break;
@@ -583,7 +527,6 @@ void vm_print_state(vm_t *vm) {
   printf("\n");
 }
 
-// Print registers
 void vm_print_registers(vm_t *vm) {
   printf("Registers: ");
   for (int i = 0; i < NUM_REGISTERS; i++) {
@@ -592,7 +535,6 @@ void vm_print_registers(vm_t *vm) {
   printf("\n");
 }
 
-// Print memory range
 void vm_print_memory(vm_t *vm, int start, int end) {
   printf("Memory [%d-%d]:\n", start, end);
   for (int i = start; i <= end && i < MEMORY_SIZE; i += 4) {
@@ -602,7 +544,6 @@ void vm_print_memory(vm_t *vm, int start, int end) {
   }
 }
 
-// Print program with addresses (objdump style)
 void vm_print_program(vm_t *vm) {
   printf("\n=== Program Disassembly ===\n");
   printf("Address  Instruction\n");
@@ -720,6 +661,15 @@ void vm_print_program(vm_t *vm) {
         printf("R%d", inst->operands[0].reg);
       } else {
         printf("#%d", inst->operands[0].value);
+      }
+      break;
+
+    case INST_PRINTS:
+      printf("PRINTS ");
+      if (inst->operands[0].type == OP_STRING) {
+        printf("\"%s\"", inst->operands[0].string);
+      } else if (inst->operands[0].type == OP_REGISTER) {
+        printf("R%d", inst->operands[0].reg);
       }
       break;
 
@@ -990,21 +940,8 @@ int vm_load_program(vm_t *vm, const char *filename) {
   return 1;
 }
 
-/**
- * Set verbose output mode
- *
- * @param vm Virtual machine instance
- * @param verbose 1 to enable verbose output, 0 to disable
- */
 void vm_set_verbose(vm_t *vm, int verbose) { vm->verbose = verbose; }
 
-/**
- * Get operand value from register or immediate
- *
- * @param vm Virtual machine instance
- * @param op Operand to resolve
- * @return The resolved value
- */
 int32_t get_operand_value(vm_t *vm, const operand_t *op) {
   if (op->type == OP_REGISTER) {
     return vm->registers[op->reg];
@@ -1013,13 +950,6 @@ int32_t get_operand_value(vm_t *vm, const operand_t *op) {
   }
 }
 
-/**
- * Get memory address from operand
- *
- * @param vm Virtual machine instance
- * @param op Operand containing address
- * @return The resolved memory address
- */
 int32_t get_memory_address(vm_t *vm, const operand_t *op) {
   if (op->type == OP_REGISTER) {
     return vm->registers[op->reg];
@@ -1028,23 +958,10 @@ int32_t get_memory_address(vm_t *vm, const operand_t *op) {
   }
 }
 
-/**
- * Validate memory access bounds
- *
- * @param address Memory address to validate
- * @return 1 if valid, 0 if invalid
- */
 int validate_memory_access(int32_t address) {
   return (address >= 0 && address < MEMORY_SIZE - 3);
 }
 
-/**
- * Validate stack operation bounds
- *
- * @param vm Virtual machine instance
- * @param is_push 1 for push operation, 0 for pop
- * @return 1 if valid, 0 if invalid
- */
 int validate_stack_operation(vm_t *vm, int is_push) {
   if (is_push) {
     return vm->stack_pointer >= 3; // Need 4 bytes for 32-bit value
@@ -1053,12 +970,6 @@ int validate_stack_operation(vm_t *vm, int is_push) {
   }
 }
 
-/**
- * Set status flags based on result value
- *
- * @param vm Virtual machine instance
- * @param result The result value to evaluate
- */
 void set_status_flags(vm_t *vm, int32_t result) {
   // Zero flag
   if (result == 0) {
@@ -1071,25 +982,11 @@ void set_status_flags(vm_t *vm, int32_t result) {
   // (like CMP) that perform comparisons or detect overflow conditions
 }
 
-/**
- * Read a 32-bit value from memory (big-endian)
- *
- * @param vm Virtual machine instance
- * @param address Memory address to read from
- * @return The 32-bit value read from memory
- */
 int32_t read_memory_32(vm_t *vm, int32_t address) {
   return (vm->memory[address] << 24) | (vm->memory[address + 1] << 16) |
          (vm->memory[address + 2] << 8) | vm->memory[address + 3];
 }
 
-/**
- * Write a 32-bit value to memory (big-endian)
- *
- * @param vm Virtual machine instance
- * @param address Memory address to write to
- * @param value The 32-bit value to write
- */
 void write_memory_32(vm_t *vm, int32_t address, int32_t value) {
   vm->memory[address] = (value >> 24) & 0xFF;
   vm->memory[address + 1] = (value >> 16) & 0xFF;
@@ -1100,6 +997,24 @@ void write_memory_32(vm_t *vm, int32_t address, int32_t value) {
 /**
  * Handle MOV instruction
  */
+static int handle_memory_access(vm_t *vm, const instruction_t *inst,
+                                int is_load) {
+  int32_t address = get_memory_address(vm, &inst->operands[1]);
+  if (!validate_memory_access(address)) {
+    vm_set_error(&vm->last_error, VM_ERROR_MEMORY_ACCESS_VIOLATION,
+                 "Memory access violation", vm->program_counter, address, NULL,
+                 instruction_table[inst->type].mnemonic);
+    return 0;
+  }
+
+  if (is_load) {
+    vm->registers[inst->operands[0].reg] = read_memory_32(vm, address);
+  } else {
+    write_memory_32(vm, address, vm->registers[inst->operands[0].reg]);
+  }
+  return 1;
+}
+
 int handle_mov(vm_t *vm, const instruction_t *inst) {
   int32_t value = get_operand_value(vm, &inst->operands[1]);
   vm->registers[inst->operands[0].reg] = value;
@@ -1114,7 +1029,6 @@ int handle_arithmetic(vm_t *vm, const instruction_t *inst,
   int32_t a = get_operand_value(vm, &inst->operands[1]);
   int32_t b = get_operand_value(vm, &inst->operands[2]);
 
-  // Special handling for division by zero
   if (op == div_op && b == 0) {
     vm_set_error(&vm->last_error, VM_ERROR_DIVISION_BY_ZERO, "Division by zero",
                  vm->program_counter, -1, NULL,
@@ -1124,6 +1038,7 @@ int handle_arithmetic(vm_t *vm, const instruction_t *inst,
 
   int32_t result = op(a, b);
   vm->registers[inst->operands[0].reg] = result;
+  set_status_flags(vm, result);
   return 1;
 }
 
@@ -1131,33 +1046,14 @@ int handle_arithmetic(vm_t *vm, const instruction_t *inst,
  * Handle LOAD instruction
  */
 int handle_load(vm_t *vm, const instruction_t *inst) {
-  int32_t address = get_memory_address(vm, &inst->operands[1]);
-  if (validate_memory_access(address)) {
-    vm->registers[inst->operands[0].reg] = read_memory_32(vm, address);
-    return 1;
-  } else {
-    vm_set_error(&vm->last_error, VM_ERROR_MEMORY_ACCESS_VIOLATION,
-                 "Memory access violation", vm->program_counter, address, NULL,
-                 instruction_table[inst->type].mnemonic);
-    return 0;
-  }
+  return handle_memory_access(vm, inst, 1);
 }
 
 /**
  * Handle STORE instruction
  */
 int handle_store(vm_t *vm, const instruction_t *inst) {
-  int32_t address = get_memory_address(vm, &inst->operands[1]);
-  if (validate_memory_access(address)) {
-    int32_t value = vm->registers[inst->operands[0].reg];
-    write_memory_32(vm, address, value);
-    return 1;
-  } else {
-    vm_set_error(&vm->last_error, VM_ERROR_MEMORY_ACCESS_VIOLATION,
-                 "Memory access violation", vm->program_counter, address, NULL,
-                 instruction_table[inst->type].mnemonic);
-    return 0;
-  }
+  return handle_memory_access(vm, inst, 0);
 }
 
 /**
@@ -1173,35 +1069,38 @@ int handle_jump(vm_t *vm, const instruction_t *inst, int condition) {
 /**
  * Handle PUSH instruction
  */
-int handle_push(vm_t *vm, const instruction_t *inst) {
-  if (validate_stack_operation(vm, 1)) {
-    int32_t value = vm->registers[inst->operands[0].reg];
-    write_memory_32(vm, vm->stack_pointer - 3, value);
-    vm->stack_pointer -= 4;
-    return 1;
-  } else {
-    vm_set_error(&vm->last_error, VM_ERROR_STACK_OVERFLOW, "Stack overflow",
-                 vm->program_counter, -1, NULL,
+static int handle_stack_operation(vm_t *vm, const instruction_t *inst,
+                                  int is_push) {
+  if (!validate_stack_operation(vm, is_push)) {
+    vm_error_code_t error =
+        is_push ? VM_ERROR_STACK_OVERFLOW : VM_ERROR_STACK_UNDERFLOW;
+    const char *message = is_push ? "Stack overflow" : "Stack underflow";
+    vm_set_error(&vm->last_error, error, message, vm->program_counter, -1, NULL,
                  instruction_table[inst->type].mnemonic);
     return 0;
   }
+
+  if (is_push) {
+    int32_t value = vm->registers[inst->operands[0].reg];
+    write_memory_32(vm, vm->stack_pointer - 3, value);
+    vm->stack_pointer -= 4;
+  } else {
+    vm->stack_pointer += 4;
+    vm->registers[inst->operands[0].reg] =
+        read_memory_32(vm, vm->stack_pointer - 3);
+  }
+  return 1;
+}
+
+int handle_push(vm_t *vm, const instruction_t *inst) {
+  return handle_stack_operation(vm, inst, 1);
 }
 
 /**
  * Handle POP instruction
  */
 int handle_pop(vm_t *vm, const instruction_t *inst) {
-  if (validate_stack_operation(vm, 0)) {
-    vm->stack_pointer += 4;
-    vm->registers[inst->operands[0].reg] =
-        read_memory_32(vm, vm->stack_pointer - 3);
-    return 1;
-  } else {
-    vm_set_error(&vm->last_error, VM_ERROR_STACK_UNDERFLOW, "Stack underflow",
-                 vm->program_counter, -1, NULL,
-                 instruction_table[inst->type].mnemonic);
-    return 0;
-  }
+  return handle_stack_operation(vm, inst, 0);
 }
 
 /**
@@ -1210,6 +1109,29 @@ int handle_pop(vm_t *vm, const instruction_t *inst) {
 int handle_print(vm_t *vm, const instruction_t *inst) {
   int32_t value = get_operand_value(vm, &inst->operands[0]);
   printf("%d\n", value);
+  return 1;
+}
+
+int handle_prints(vm_t *vm, const instruction_t *inst) {
+  if (inst->operands[0].type == OP_STRING) {
+    printf("%s\n", inst->operands[0].string);
+  } else if (inst->operands[0].type == OP_REGISTER) {
+    // Treat register value as memory address pointing to string
+    int32_t address = vm->registers[inst->operands[0].reg];
+    if (validate_memory_access(address)) {
+      printf("%s\n", (char *)&vm->memory[address]);
+    } else {
+      vm_set_error(&vm->last_error, VM_ERROR_MEMORY_ACCESS_VIOLATION,
+                   "Invalid string address", vm->program_counter, address, NULL,
+                   "PRINTS");
+      return 0;
+    }
+  } else {
+    vm_set_error(&vm->last_error, VM_ERROR_INVALID_OPERAND,
+                 "PRINTS requires string literal or register",
+                 vm->program_counter, -1, NULL, "PRINTS");
+    return 0;
+  }
   return 1;
 }
 
@@ -1232,9 +1154,6 @@ int handle_input(vm_t *vm, const instruction_t *inst) {
   }
 }
 
-/**
- * Handle CMP instruction
- */
 int handle_cmp(vm_t *vm, const instruction_t *inst) {
   int32_t a = get_operand_value(vm, &inst->operands[0]);
   int32_t b = get_operand_value(vm, &inst->operands[1]);

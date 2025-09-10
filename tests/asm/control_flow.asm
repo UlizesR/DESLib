@@ -1,43 +1,35 @@
-; Test file for control flow operations
-; This file tests JMP, JZ, and JNZ instructions
-
-; Test unconditional jump
 MOV R0, #10
 JMP skip1
-MOV R0, #20      ; This should be skipped
+MOV R0, #20
 skip1:
-PRINT R0         ; Should print 10
+PRINT R0
 
-; Test conditional jump (JZ) - should not jump
 MOV R1, #5
-CMP R1, #0       ; R1 != 0, so zero flag not set
+CMP R1, #0
 JZ skip2
-MOV R1, #15      ; This should execute
+MOV R1, #15
 skip2:
-PRINT R1         ; Should print 15
+PRINT R1
 
-; Test conditional jump (JZ) - should jump
 MOV R2, #0
-CMP R2, #0       ; R2 == 0, so zero flag is set
+CMP R2, #0
 JZ skip3
-MOV R2, #25      ; This should be skipped
+MOV R2, #25
 skip3:
-PRINT R2         ; Should print 0
+PRINT R2
 
-; Test conditional jump (JNZ) - should jump
 MOV R3, #7
-CMP R3, #0       ; R3 != 0, so zero flag not set
+CMP R3, #0
 JNZ skip4
-MOV R3, #35      ; This should be skipped
+MOV R3, #35
 skip4:
-PRINT R3         ; Should print 7
+PRINT R3
 
-; Test conditional jump (JNZ) - should not jump
 MOV R4, #0
-CMP R4, #0       ; R4 == 0, so zero flag is set
+CMP R4, #0
 JNZ skip5
-MOV R4, #45      ; This should execute
+MOV R4, #45
 skip5:
-PRINT R4         ; Should print 45
+PRINT R4
 
 HALT

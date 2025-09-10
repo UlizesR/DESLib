@@ -43,28 +43,35 @@
 
 // Instruction types
 typedef enum {
-  INST_MOV,   // MOV R1, R2 or MOV R1, #123
-  INST_ADD,   // ADD R1, R2, R3
-  INST_SUB,   // SUB R1, R2, R3
-  INST_MUL,   // MUL R1, R2, R3
-  INST_DIV,   // DIV R1, R2, R3
-  INST_LOAD,  // LOAD R1, [R2] or LOAD R1, [123]
-  INST_STORE, // STORE R1, [R2] or STORE R1, [123]
-  INST_JMP,   // JMP label or JMP 123
-  INST_JZ,    // JZ label or JZ 123
-  INST_JNZ,   // JNZ label or JNZ 123
-  INST_PUSH,  // PUSH R1
-  INST_POP,   // POP R1
-  INST_PRINT, // PRINT R1 or PRINT #123
-  INST_INPUT, // INPUT R1
-  INST_CMP,   // CMP R1, R2 or CMP R1, #123
-  INST_HALT,  // HALT
-  INST_NOP,   // NOP
+  INST_MOV,    // MOV R1, R2 or MOV R1, #123
+  INST_ADD,    // ADD R1, R2, R3
+  INST_SUB,    // SUB R1, R2, R3
+  INST_MUL,    // MUL R1, R2, R3
+  INST_DIV,    // DIV R1, R2, R3
+  INST_LOAD,   // LOAD R1, [R2] or LOAD R1, [123]
+  INST_STORE,  // STORE R1, [R2] or STORE R1, [123]
+  INST_JMP,    // JMP label or JMP 123
+  INST_JZ,     // JZ label or JZ 123
+  INST_JNZ,    // JNZ label or JNZ 123
+  INST_PUSH,   // PUSH R1
+  INST_POP,    // POP R1
+  INST_PRINT,  // PRINT R1 or PRINT #123
+  INST_PRINTS, // PRINTS "string" or PRINTS R1 (address)
+  INST_INPUT,  // INPUT R1
+  INST_CMP,    // CMP R1, R2 or CMP R1, #123
+  INST_HALT,   // HALT
+  INST_NOP,    // NOP
   INST_UNKNOWN
 } instruction_type_t;
 
 // Operand types
-typedef enum { OP_REGISTER, OP_IMMEDIATE, OP_MEMORY, OP_LABEL } operand_type_t;
+typedef enum {
+  OP_REGISTER,
+  OP_IMMEDIATE,
+  OP_MEMORY,
+  OP_LABEL,
+  OP_STRING
+} operand_type_t;
 
 // Label structure
 typedef struct {
@@ -86,6 +93,7 @@ typedef struct {
     int reg;                      // Register number
     int32_t value;                // Immediate value or memory address
     char label[MAX_LABEL_LENGTH]; // Label name
+    char string[MAX_LINE_LENGTH]; // String literal
   };
 } operand_t;
 
@@ -164,6 +172,7 @@ int handle_jump(vm_t *vm, const instruction_t *inst, int condition);
 int handle_push(vm_t *vm, const instruction_t *inst);
 int handle_pop(vm_t *vm, const instruction_t *inst);
 int handle_print(vm_t *vm, const instruction_t *inst);
+int handle_prints(vm_t *vm, const instruction_t *inst);
 int handle_input(vm_t *vm, const instruction_t *inst);
 int handle_cmp(vm_t *vm, const instruction_t *inst);
 

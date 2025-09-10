@@ -17,9 +17,7 @@ void vm_clear_error(vm_error_t *error) {
 /**
  * Set error information
  */
-void vm_set_error(vm_error_t *error, vm_error_code_t code, const char *message,
-                  int32_t pc, int32_t addr, const char *filename,
-                  const char *mnemonic) {
+void vm_set_error(vm_error_t *error, vm_error_code_t code, const char *message, int32_t pc, int32_t addr, const char *filename, const char *mnemonic) {
   if (!error)
     return;
 
@@ -79,8 +77,7 @@ void vm_print_error(const vm_error_t *error) {
   if (!error || error->code == VM_ERROR_NONE)
     return;
 
-  printf("VM Error [%s]: %s\n", vm_error_severity_to_string(error->severity),
-         vm_error_code_to_string(error->code));
+  printf("VM Error [%s]: %s\n", vm_error_severity_to_string(error->severity), vm_error_code_to_string(error->code));
 
   if (strlen(error->message) > 0) {
     printf("  Message: %s\n", error->message);

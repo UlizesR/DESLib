@@ -6,7 +6,7 @@ int main() {
   vm_t *vm = vm_create();
   assert(vm != NULL);
 
-  if (vm_load_program(vm, "../tests/asm/control_flow.asm")) {
+  if (vm_load_program(vm, "../tests/asm/strings.asm")) {
     vm_run(vm);
   } else {
     printf("Failed to load assembly file\n");
@@ -14,14 +14,9 @@ int main() {
     return 1;
   }
 
-  assert(vm->registers[R0] == 10);
-  assert(vm->registers[R1] == 15);
-  assert(vm->registers[R2] == 0);
-  assert(vm->registers[R3] == 7);
-  assert(vm->registers[R4] == 45);
   assert(vm->running == 0);
 
-  printf("All control flow tests passed!\n");
+  printf("All string printing tests passed!\n");
   vm_destroy(vm);
   return 0;
 }

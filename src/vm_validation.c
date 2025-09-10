@@ -79,6 +79,10 @@ vm_validation_result_t vm_validate_operand(const void *op_ptr,
     // Label validation happens during assembly
     break;
 
+  case OP_STRING:
+    // String literals are always valid
+    break;
+
   default:
     vm_set_error(&result.error, VM_ERROR_INVALID_OPERAND,
                  "Invalid operand type", -1, -1, NULL, NULL);

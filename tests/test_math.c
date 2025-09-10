@@ -1,16 +1,11 @@
 #include "../include/assembly_vm.h"
 #include <assert.h>
 #include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
-// Test program for arithmetic instructions
 
 int main() {
   vm_t *vm = vm_create();
   assert(vm != NULL);
 
-  // Load program from assembly file
   if (vm_load_program(vm, "../tests/asm/math.asm")) {
     vm_run(vm);
   } else {
@@ -27,8 +22,6 @@ int main() {
   assert(vm->registers[R5] == 20);
   assert(vm->registers[R6] == -10);
   assert(vm->registers[R7] == 17);
-
-  // Verify VM stopped properly
   assert(vm->running == 0);
 
   printf("All arithmetic tests passed!\n");
