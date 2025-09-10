@@ -56,5 +56,6 @@ int main(int argc, char *argv[]) {
   }
 
   vm_destroy(vm);
+  vm_cleanup_global_resources();
   return 0;
 }

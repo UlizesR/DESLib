@@ -1,4 +1,5 @@
 #include "assembly_vm.h"
+#include "vm_utils.h"
 
 static const instruction_metadata_t instruction_table[] = {
     [INST_MOV] = {"MOV", 2, 0},
@@ -58,7 +59,17 @@ vm_t *vm_create(void) {
 
 void vm_destroy(vm_t *vm) {
   if (vm) {
+    // Note: We don't destroy the global instruction_hash_table here
+    // as it's shared across all VM instances. It should be destroyed
+    // at program termination if needed.
     free(vm);
+  }
+}
+
+void vm_cleanup_global_resources(void) {
+  if (instruction_hash_table) {
+    vm_hash_table_destroy(instruction_hash_table);
+    instruction_hash_table = NULL;
   }
 }
 
@@ -138,50 +149,45 @@ operand_t parse_operand(const char *str) {
     op.type = OP_IMMEDIATE;
     op.value = atoi(str);
   } else {
-    op.type = OP_LABEL;
-    strncpy(op.label, str, MAX_LABEL_LENGTH - 1);
-    op.label[MAX_LABEL_LENGTH - 1] = '\0';
+    // Only treat as label if the string is not empty
+    if (strlen(str) > 0) {
+      op.type = OP_LABEL;
+      strncpy(op.label, str, MAX_LABEL_LENGTH - 1);
+      op.label[MAX_LABEL_LENGTH - 1] = '\0';
+    } else {
+      op.type = OP_IMMEDIATE;
+      op.value = 0;
+    }
   }
 
   return op;
 }
 
-// Parse a single assembly line
-int parse_assembly_line(const char *line, instruction_t *inst) {
+// Helper function to tokenize assembly line
+static int tokenize_line(const char *line, char *tokens[], int max_tokens) {
   char line_copy[MAX_LINE_LENGTH];
   strncpy(line_copy, line, MAX_LINE_LENGTH - 1);
   line_copy[MAX_LINE_LENGTH - 1] = '\0';
 
-  // Remove comments and trailing whitespace
-  char *comment = strchr(line_copy, ';');
-  if (comment)
-    *comment = '\0';
+  // Remove comments and trim whitespace
+  vm_str_remove_comments(line_copy);
+  char *start = vm_str_trim(line_copy);
 
-  // Trim whitespace
-  char *start = line_copy;
-  while (isspace(*start))
-    start++;
-  char *end = start + strlen(start) - 1;
-  while (end > start && isspace(*end))
-    end--;
-  *(end + 1) = '\0';
-
-  if (strlen(start) == 0)
+  if (vm_str_is_empty(start)) {
     return 0; // Empty line
+  }
 
   // Check if this is a label (ends with ':')
-  if (start[strlen(start) - 1] == ':') {
-    // This is a label, not an instruction - skip it for now
-    // Labels will be handled during label resolution phase
-    return 0;
+  if (vm_str_ends_with(start, ":")) {
+    return 0; // This is a label, not an instruction
   }
 
   // Tokenize with proper string handling
-  char *tokens[4];
   int token_count = 0;
   char *pos = start;
+  static char token_storage[4][MAX_LINE_LENGTH]; // Storage for token copies
 
-  while (*pos && token_count < 4) {
+  while (*pos && token_count < max_tokens) {
     // Skip whitespace
     while (*pos && isspace(*pos))
       pos++;
@@ -190,37 +196,48 @@ int parse_assembly_line(const char *line, instruction_t *inst) {
 
     if (*pos == '"') {
       // Handle quoted string
-      tokens[token_count] = pos;
+      char *token_start = pos;
       pos++; // Skip opening quote
       while (*pos && *pos != '"')
         pos++;
       if (*pos == '"')
         pos++; // Skip closing quote
-      token_count++;
+
+      // Copy the token (including quotes)
+      size_t len = pos - token_start;
+      if (len < MAX_LINE_LENGTH) {
+        strncpy(token_storage[token_count], token_start, len);
+        token_storage[token_count][len] = '\0';
+        tokens[token_count] = token_storage[token_count];
+        token_count++;
+      }
     } else {
       // Handle regular token
-      tokens[token_count] = pos;
+      char *token_start = pos;
       while (*pos && !isspace(*pos) && *pos != ',')
         pos++;
-      if (*pos) {
-        *pos = '\0';
-        pos++;
+
+      // Copy the token
+      size_t len = pos - token_start;
+      if (len < MAX_LINE_LENGTH) {
+        strncpy(token_storage[token_count], token_start, len);
+        token_storage[token_count][len] = '\0';
+        tokens[token_count] = token_storage[token_count];
+        token_count++;
       }
-      token_count++;
+
+      if (*pos == ',') {
+        pos++; // Skip comma
+      }
     }
   }
 
-  if (token_count == 0)
-    return 0;
+  return token_count;
+}
 
-  // Parse instruction
-  inst->type = parse_instruction(tokens[0]);
-  if (inst->type == INST_UNKNOWN) {
-    printf("Unknown instruction: %s\n", tokens[0]);
-    return 0;
-  }
-
-  // Parse operands based on instruction type
+// Helper function to parse operands based on instruction type
+static int parse_instruction_operands(instruction_t *inst, char *tokens[],
+                                      int token_count) {
   inst->num_operands = 0;
 
   switch (inst->type) {
@@ -291,6 +308,26 @@ int parse_assembly_line(const char *line, instruction_t *inst) {
   }
 
   return 1;
+}
+
+// Parse a single assembly line
+int parse_assembly_line(const char *line, instruction_t *inst) {
+  char *tokens[4];
+  int token_count = tokenize_line(line, tokens, 4);
+
+  if (token_count == 0) {
+    return 0; // Empty line or label
+  }
+
+  // Parse instruction
+  inst->type = parse_instruction(tokens[0]);
+  if (inst->type == INST_UNKNOWN) {
+    printf("Unknown instruction: %s\n", tokens[0]);
+    return 0;
+  }
+
+  // Parse operands based on instruction type
+  return parse_instruction_operands(inst, tokens, token_count);
 }
 
 int vm_execute_instruction(vm_t *vm, instruction_t *inst) {
@@ -398,111 +435,11 @@ void vm_step(vm_t *vm) {
   }
 
   instruction_t *inst = &vm->program[vm->program_counter];
-  printf("PC=%d (0x%04X): ", vm->program_counter, vm->program_counter);
 
-  // Print instruction
-  switch (inst->type) {
-  case INST_MOV:
-    printf("MOV R%d, ", inst->operands[0].reg);
-    if (inst->operands[1].type == OP_REGISTER) {
-      printf("R%d", inst->operands[1].reg);
-    } else {
-      printf("#%d", inst->operands[1].value);
-    }
-    break;
-  case INST_ADD:
-    printf("ADD R%d, R%d, ", inst->operands[0].reg, inst->operands[1].reg);
-    if (inst->operands[2].type == OP_REGISTER) {
-      printf("R%d", inst->operands[2].reg);
-    } else {
-      printf("#%d", inst->operands[2].value);
-    }
-    break;
-  case INST_SUB:
-    printf("SUB R%d, R%d, ", inst->operands[0].reg, inst->operands[1].reg);
-    if (inst->operands[2].type == OP_REGISTER) {
-      printf("R%d", inst->operands[2].reg);
-    } else {
-      printf("#%d", inst->operands[2].value);
-    }
-    break;
-  case INST_MUL:
-    printf("MUL R%d, R%d, ", inst->operands[0].reg, inst->operands[1].reg);
-    if (inst->operands[2].type == OP_REGISTER) {
-      printf("R%d", inst->operands[2].reg);
-    } else {
-      printf("#%d", inst->operands[2].value);
-    }
-    break;
-  case INST_DIV:
-    printf("DIV R%d, R%d, ", inst->operands[0].reg, inst->operands[1].reg);
-    if (inst->operands[2].type == OP_REGISTER) {
-      printf("R%d", inst->operands[2].reg);
-    } else {
-      printf("#%d", inst->operands[2].value);
-    }
-    break;
-  case INST_STORE:
-    printf("STORE R%d, [", inst->operands[0].reg);
-    if (inst->operands[1].type == OP_REGISTER) {
-      printf("R%d", inst->operands[1].reg);
-    } else {
-      printf("%d", inst->operands[1].value);
-    }
-    printf("]");
-    break;
-  case INST_LOAD:
-    printf("LOAD R%d, [", inst->operands[0].reg);
-    if (inst->operands[1].type == OP_REGISTER) {
-      printf("R%d", inst->operands[1].reg);
-    } else {
-      printf("%d", inst->operands[1].value);
-    }
-    printf("]");
-    break;
-  case INST_PUSH:
-    printf("PUSH R%d", inst->operands[0].reg);
-    break;
-  case INST_POP:
-    printf("POP R%d", inst->operands[0].reg);
-    break;
-  case INST_PRINT:
-    printf("PRINT ");
-    if (inst->operands[0].type == OP_REGISTER) {
-      printf("R%d", inst->operands[0].reg);
-    } else {
-      printf("#%d", inst->operands[0].value);
-    }
-    break;
-  case INST_PRINTS:
-    printf("PRINTS ");
-    if (inst->operands[0].type == OP_STRING) {
-      printf("\"%s\"", inst->operands[0].string);
-    } else if (inst->operands[0].type == OP_REGISTER) {
-      printf("R%d", inst->operands[0].reg);
-    }
-    break;
-  case INST_INPUT:
-    printf("INPUT R%d", inst->operands[0].reg);
-    break;
-  case INST_CMP:
-    printf("CMP R%d, ", inst->operands[0].reg);
-    if (inst->operands[1].type == OP_REGISTER) {
-      printf("R%d", inst->operands[1].reg);
-    } else {
-      printf("#%d", inst->operands[1].value);
-    }
-    break;
-  case INST_HALT:
-    printf("HALT");
-    break;
-  case INST_NOP:
-    printf("NOP");
-    break;
-  default:
-    printf("Unknown");
-    break;
-  }
+  // Use the new instruction printer
+  vm_print_context_t context = {.mode = VM_PRINT_MODE_STEP,
+                                .instruction_number = vm->program_counter};
+  vm_print_instruction(inst, &context);
   printf("\n");
 
   if (vm_execute_instruction(vm, inst)) {
@@ -553,151 +490,10 @@ void vm_print_program(vm_t *vm) {
     instruction_t *inst = &vm->program[i];
     printf("0x%04X   ", i);
 
-    // Print instruction based on type
-    switch (inst->type) {
-    case INST_MOV:
-      printf("MOV R%d, ", inst->operands[0].reg);
-      if (inst->operands[1].type == OP_REGISTER) {
-        printf("R%d", inst->operands[1].reg);
-      } else {
-        printf("#%d", inst->operands[1].value);
-      }
-      break;
-
-    case INST_ADD:
-      printf("ADD R%d, R%d, ", inst->operands[0].reg, inst->operands[1].reg);
-      if (inst->operands[2].type == OP_REGISTER) {
-        printf("R%d", inst->operands[2].reg);
-      } else {
-        printf("#%d", inst->operands[2].value);
-      }
-      break;
-
-    case INST_SUB:
-      printf("SUB R%d, R%d, ", inst->operands[0].reg, inst->operands[1].reg);
-      if (inst->operands[2].type == OP_REGISTER) {
-        printf("R%d", inst->operands[2].reg);
-      } else {
-        printf("#%d", inst->operands[2].value);
-      }
-      break;
-
-    case INST_MUL:
-      printf("MUL R%d, R%d, ", inst->operands[0].reg, inst->operands[1].reg);
-      if (inst->operands[2].type == OP_REGISTER) {
-        printf("R%d", inst->operands[2].reg);
-      } else {
-        printf("#%d", inst->operands[2].value);
-      }
-      break;
-
-    case INST_DIV:
-      printf("DIV R%d, R%d, ", inst->operands[0].reg, inst->operands[1].reg);
-      if (inst->operands[2].type == OP_REGISTER) {
-        printf("R%d", inst->operands[2].reg);
-      } else {
-        printf("#%d", inst->operands[2].value);
-      }
-      break;
-
-    case INST_LOAD:
-      printf("LOAD R%d, [", inst->operands[0].reg);
-      if (inst->operands[1].type == OP_REGISTER) {
-        printf("R%d", inst->operands[1].reg);
-      } else {
-        printf("%d", inst->operands[1].value);
-      }
-      printf("]");
-      break;
-
-    case INST_STORE:
-      printf("STORE R%d, [", inst->operands[0].reg);
-      if (inst->operands[1].type == OP_REGISTER) {
-        printf("R%d", inst->operands[1].reg);
-      } else {
-        printf("%d", inst->operands[1].value);
-      }
-      printf("]");
-      break;
-
-    case INST_JMP:
-      printf("JMP ");
-      if (inst->operands[0].type == OP_IMMEDIATE) {
-        printf("%d", inst->operands[0].value);
-      } else {
-        printf("%s", inst->operands[0].label);
-      }
-      break;
-
-    case INST_JZ:
-      printf("JZ ");
-      if (inst->operands[0].type == OP_IMMEDIATE) {
-        printf("%d", inst->operands[0].value);
-      } else {
-        printf("%s", inst->operands[0].label);
-      }
-      break;
-
-    case INST_JNZ:
-      printf("JNZ ");
-      if (inst->operands[0].type == OP_IMMEDIATE) {
-        printf("%d", inst->operands[0].value);
-      } else {
-        printf("%s", inst->operands[0].label);
-      }
-      break;
-
-    case INST_PUSH:
-      printf("PUSH R%d", inst->operands[0].reg);
-      break;
-
-    case INST_POP:
-      printf("POP R%d", inst->operands[0].reg);
-      break;
-
-    case INST_PRINT:
-      printf("PRINT ");
-      if (inst->operands[0].type == OP_REGISTER) {
-        printf("R%d", inst->operands[0].reg);
-      } else {
-        printf("#%d", inst->operands[0].value);
-      }
-      break;
-
-    case INST_PRINTS:
-      printf("PRINTS ");
-      if (inst->operands[0].type == OP_STRING) {
-        printf("\"%s\"", inst->operands[0].string);
-      } else if (inst->operands[0].type == OP_REGISTER) {
-        printf("R%d", inst->operands[0].reg);
-      }
-      break;
-
-    case INST_INPUT:
-      printf("INPUT R%d", inst->operands[0].reg);
-      break;
-
-    case INST_CMP:
-      printf("CMP R%d, ", inst->operands[0].reg);
-      if (inst->operands[1].type == OP_REGISTER) {
-        printf("R%d", inst->operands[1].reg);
-      } else {
-        printf("#%d", inst->operands[1].value);
-      }
-      break;
-
-    case INST_HALT:
-      printf("HALT");
-      break;
-
-    case INST_NOP:
-      printf("NOP");
-      break;
-
-    default:
-      printf("UNKNOWN");
-      break;
-    }
+    // Use the new instruction printer
+    vm_print_context_t context = {.mode = VM_PRINT_MODE_SIMPLE,
+                                  .instruction_number = i};
+    vm_print_instruction(inst, &context);
     printf("\n");
   }
   printf("\n");
@@ -758,6 +554,39 @@ int resolve_labels(vm_t *vm) {
   return 1;
 }
 
+// Helper function to process a single line for label collection
+static int process_line_for_labels(const char *line, vm_t *vm,
+                                   int *instruction_count) {
+  char line_copy[MAX_LINE_LENGTH];
+  strncpy(line_copy, line, MAX_LINE_LENGTH - 1);
+  line_copy[MAX_LINE_LENGTH - 1] = '\0';
+
+  // Remove comments and trim whitespace
+  vm_str_remove_comments(line_copy);
+  char *start = vm_str_trim(line_copy);
+
+  if (vm_str_is_empty(start)) {
+    return 1; // Empty line, continue
+  }
+
+  // Check if this is a label (ends with ':')
+  if (vm_str_ends_with(start, ":")) {
+    // Remove the ':' and add to label table
+    start[strlen(start) - 1] = '\0';
+    // Check if label name is not empty after removing colon
+    if (strlen(start) > 0 && !vm_str_is_empty(start)) {
+      if (!add_label(vm, start, *instruction_count)) {
+        return 0;
+      }
+    }
+  } else {
+    // This is an instruction
+    (*instruction_count)++;
+  }
+
+  return 1;
+}
+
 // Load program from string
 int vm_load_program_from_string(vm_t *vm, const char *program_string) {
   if (!program_string) {
@@ -786,36 +615,8 @@ int vm_load_program_from_string(vm_t *vm, const char *program_string) {
     strncpy(line, current, line_len);
     line[line_len] = '\0';
 
-    // Remove comments and trailing whitespace
-    char *comment = strchr(line, ';');
-    if (comment)
-      *comment = '\0';
-
-    // Trim whitespace
-    char *start = line;
-    while (isspace(*start))
-      start++;
-    char *end = start + strlen(start) - 1;
-    while (end > start && isspace(*end))
-      end--;
-    *(end + 1) = '\0';
-
-    if (strlen(start) == 0) {
-      // Move to next line
-      current = line_end + (*line_end == '\n' ? 1 : 0);
-      continue;
-    }
-
-    // Check if this is a label (ends with ':')
-    if (start[strlen(start) - 1] == ':') {
-      // Remove the ':' and add to label table
-      start[strlen(start) - 1] = '\0';
-      if (!add_label(vm, start, instruction_count)) {
-        return 0;
-      }
-    } else {
-      // This is an instruction
-      instruction_count++;
+    if (!process_line_for_labels(line, vm, &instruction_count)) {
+      return 0;
     }
 
     // Move to next line
@@ -877,38 +678,9 @@ int vm_load_program(vm_t *vm, const char *filename) {
 
   // First pass: collect labels
   while (fgets(line, sizeof(line), file)) {
-    char line_copy[MAX_LINE_LENGTH];
-    strncpy(line_copy, line, MAX_LINE_LENGTH - 1);
-    line_copy[MAX_LINE_LENGTH - 1] = '\0';
-
-    // Remove comments and trailing whitespace
-    char *comment = strchr(line_copy, ';');
-    if (comment)
-      *comment = '\0';
-
-    // Trim whitespace
-    char *start = line_copy;
-    while (isspace(*start))
-      start++;
-    char *end = start + strlen(start) - 1;
-    while (end > start && isspace(*end))
-      end--;
-    *(end + 1) = '\0';
-
-    if (strlen(start) == 0)
-      continue; // Empty line
-
-    // Check if this is a label (ends with ':')
-    if (start[strlen(start) - 1] == ':') {
-      // Remove the ':' and add to label table
-      start[strlen(start) - 1] = '\0';
-      if (!add_label(vm, start, instruction_count)) {
-        fclose(file);
-        return 0;
-      }
-    } else {
-      // This is an instruction
-      instruction_count++;
+    if (!process_line_for_labels(line, vm, &instruction_count)) {
+      fclose(file);
+      return 0;
     }
   }
 
@@ -1179,6 +951,208 @@ int handle_cmp(vm_t *vm, const instruction_t *inst) {
   } else {
     vm->status_flags &= ~FLAG_OVERFLOW;
   }
+
+  return 1;
+}
+
+// Binary format constants
+#define DEZ_MAGIC 0xDEADBEEF
+#define DEZ_VERSION 1
+
+// Binary instruction encoding
+typedef struct {
+  uint32_t magic;        // Magic number: 0xDEADBEEF
+  uint32_t version;      // Version number
+  uint32_t program_size; // Number of instructions
+  uint32_t num_labels;   // Number of labels
+} dez_header_t;
+
+typedef struct {
+  uint8_t opcode;        // Instruction opcode
+  uint8_t operand_count; // Number of operands
+  uint8_t operand_types; // Bit field for operand types (2 bits per operand)
+  uint8_t reserved;      // Reserved for alignment
+  union {
+    struct {
+      uint8_t reg1, reg2, reg3; // Register operands
+      uint8_t padding;
+    } regs;
+    struct {
+      int32_t value1, value2, value3; // Immediate values
+    } values;
+    struct {
+      uint32_t label_offset; // Offset into string table
+      uint32_t padding;
+    } label;
+    struct {
+      uint32_t string_offset; // Offset into string table
+      uint32_t string_length;
+    } string;
+  } operands;
+} dez_instruction_t;
+
+// Helper function to encode operand types
+static uint8_t encode_operand_types(const instruction_t *inst) {
+  uint8_t types = 0;
+  for (int i = 0; i < inst->num_operands && i < 3; i++) {
+    // Map operand types to 2-bit values
+    uint8_t type_code = 0;
+    switch (inst->operands[i].type) {
+    case OP_REGISTER:
+      type_code = 0;
+      break;
+    case OP_IMMEDIATE:
+      type_code = 1;
+      break;
+    case OP_MEMORY:
+      type_code = 2;
+      break;
+    case OP_LABEL:
+      type_code = 3;
+      break;
+    case OP_STRING:
+      type_code = 3;
+      break; // Use same code as label for now
+    default:
+      type_code = 0;
+      break;
+    }
+    types |= (type_code & 0x3) << (i * 2);
+  }
+  return types;
+}
+
+int assemble_file(const char *input_file, const char *output_file) {
+  // Create VM to parse the assembly
+  vm_t *vm = vm_create();
+  if (!vm) {
+    printf("Error: Failed to create VM for assembly\n");
+    return 0;
+  }
+
+  // Load the assembly program
+  if (!vm_load_program(vm, input_file)) {
+    printf("Error: Failed to load assembly file %s\n", input_file);
+    vm_destroy(vm);
+    return 0;
+  }
+
+  // Open output file
+  FILE *out = fopen(output_file, "wb");
+  if (!out) {
+    printf("Error: Cannot create output file %s\n", output_file);
+    vm_destroy(vm);
+    return 0;
+  }
+
+  // Write header
+  dez_header_t header = {.magic = DEZ_MAGIC,
+                         .version = DEZ_VERSION,
+                         .program_size = vm->program_size,
+                         .num_labels = vm->num_labels};
+
+  if (fwrite(&header, sizeof(header), 1, out) != 1) {
+    printf("Error: Failed to write header\n");
+    fclose(out);
+    vm_destroy(vm);
+    return 0;
+  }
+
+  // Write labels
+  for (int i = 0; i < vm->num_labels; i++) {
+    uint32_t name_length = strlen(vm->labels[i].name);
+    if (fwrite(&vm->labels[i].address, sizeof(uint32_t), 1, out) != 1 ||
+        fwrite(&name_length, sizeof(uint32_t), 1, out) != 1 ||
+        fwrite(vm->labels[i].name, 1, name_length, out) != name_length) {
+      printf("Error: Failed to write label %s\n", vm->labels[i].name);
+      fclose(out);
+      vm_destroy(vm);
+      return 0;
+    }
+  }
+
+  // Write instructions
+  for (int i = 0; i < vm->program_size; i++) {
+    instruction_t *inst = &vm->program[i];
+    dez_instruction_t dez_inst = {0};
+
+    dez_inst.opcode = (uint8_t)inst->type;
+    dez_inst.operand_count = inst->num_operands;
+    dez_inst.operand_types = encode_operand_types(inst);
+
+    // Encode operands based on their types
+    for (int j = 0; j < inst->num_operands && j < 3; j++) {
+      switch (inst->operands[j].type) {
+      case OP_REGISTER:
+        if (j == 0)
+          dez_inst.operands.regs.reg1 = inst->operands[j].reg;
+        else if (j == 1)
+          dez_inst.operands.regs.reg2 = inst->operands[j].reg;
+        else if (j == 2)
+          dez_inst.operands.regs.reg3 = inst->operands[j].reg;
+        break;
+      case OP_IMMEDIATE:
+        if (j == 0)
+          dez_inst.operands.values.value1 = inst->operands[j].value;
+        else if (j == 1)
+          dez_inst.operands.values.value2 = inst->operands[j].value;
+        else if (j == 2)
+          dez_inst.operands.values.value3 = inst->operands[j].value;
+        break;
+      case OP_LABEL:
+        // For labels, we'll store the address after resolving
+        if (j == 0)
+          dez_inst.operands.values.value1 =
+              find_label(vm, inst->operands[j].label);
+        else if (j == 1)
+          dez_inst.operands.values.value2 =
+              find_label(vm, inst->operands[j].label);
+        else if (j == 2)
+          dez_inst.operands.values.value3 =
+              find_label(vm, inst->operands[j].label);
+        break;
+      case OP_STRING:
+        // For strings, we'll store the length and then the string data
+        if (j == 0) {
+          dez_inst.operands.string.string_length =
+              strlen(inst->operands[j].string);
+          // We'll write the string data after the instruction
+        }
+        break;
+      default:
+        break;
+      }
+    }
+
+    // Write instruction
+    if (fwrite(&dez_inst, sizeof(dez_instruction_t), 1, out) != 1) {
+      printf("Error: Failed to write instruction %d\n", i);
+      fclose(out);
+      vm_destroy(vm);
+      return 0;
+    }
+
+    // Write string data if present
+    for (int j = 0; j < inst->num_operands; j++) {
+      if (inst->operands[j].type == OP_STRING) {
+        if (fwrite(inst->operands[j].string, 1,
+                   strlen(inst->operands[j].string),
+                   out) != strlen(inst->operands[j].string)) {
+          printf("Error: Failed to write string data for instruction %d\n", i);
+          fclose(out);
+          vm_destroy(vm);
+          return 0;
+        }
+      }
+    }
+  }
+
+  fclose(out);
+  vm_destroy(vm);
+
+  printf("Successfully assembled %s to %s\n", input_file, output_file);
+  printf("Program size: %d instructions\n", vm->program_size);
+  printf("Labels: %d\n", vm->num_labels);
 
   return 1;
 }

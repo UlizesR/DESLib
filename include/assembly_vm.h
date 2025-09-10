@@ -10,6 +10,7 @@
 // Include module headers
 #include "vm_errors.h"
 #include "vm_hash_table.h"
+#include "vm_instruction_printer.h"
 #include "vm_validation.h"
 
 // Constants
@@ -128,6 +129,7 @@ typedef struct {
 vm_t *vm_create(void);
 void vm_destroy(vm_t *vm);
 void vm_reset(vm_t *vm);
+void vm_cleanup_global_resources(void);
 int vm_load_program(vm_t *vm, const char *filename);
 int vm_load_program_from_string(vm_t *vm, const char *program_string);
 int vm_execute_instruction(vm_t *vm, instruction_t *inst);

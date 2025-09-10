@@ -45,9 +45,7 @@ typedef struct {
 
 // Error handling functions
 void vm_clear_error(vm_error_t *error);
-void vm_set_error(vm_error_t *error, vm_error_code_t code, const char *message,
-                  int32_t pc, int32_t addr, const char *filename,
-                  const char *mnemonic);
+void vm_set_error(vm_error_t *error, vm_error_code_t code, const char *message, int32_t pc, int32_t addr, const char *filename, const char *mnemonic);
 void vm_print_error(const vm_error_t *error);
 const char *vm_error_code_to_string(vm_error_code_t code);
 const char *vm_error_severity_to_string(vm_error_severity_t severity);
