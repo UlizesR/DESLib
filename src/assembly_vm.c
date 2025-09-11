@@ -18,6 +18,8 @@ static const instruction_metadata_t instruction_table[] = {
     [INST_PRINTS] = {"PRINTS", 1, INST_FLAG_IO},
     [INST_INPUT] = {"INPUT", 1, INST_FLAG_IO},
     [INST_CMP] = {"CMP", 2, INST_FLAG_ARITHMETIC},
+    [INST_CALL] = {"CALL", 1, INST_FLAG_JUMP | INST_FLAG_MEMORY},
+    [INST_RET] = {"RET", 0, INST_FLAG_JUMP},
     [INST_HALT] = {"HALT", 0, 0},
     [INST_NOP] = {"NOP", 0, 0},
     [INST_UNKNOWN] = {NULL, 0, 0}};
@@ -59,9 +61,6 @@ vm_t *vm_create(void) {
 
 void vm_destroy(vm_t *vm) {
   if (vm) {
-    // Note: We don't destroy the global instruction_hash_table here
-    // as it's shared across all VM instances. It should be destroyed
-    // at program termination if needed.
     free(vm);
   }
 }
@@ -273,6 +272,7 @@ static int parse_instruction_operands(instruction_t *inst, char *tokens[],
   case INST_JMP:
   case INST_JZ:
   case INST_JNZ:
+  case INST_CALL:
     if (token_count >= 2) {
       inst->operands[0] = parse_operand(tokens[1]);
       inst->num_operands = 1;
@@ -298,6 +298,7 @@ static int parse_instruction_operands(instruction_t *inst, char *tokens[],
     }
     break;
 
+  case INST_RET:
   case INST_HALT:
   case INST_NOP:
     inst->num_operands = 0;
@@ -387,6 +388,12 @@ int vm_execute_instruction(vm_t *vm, instruction_t *inst) {
 
   case INST_CMP:
     return handle_cmp(vm, inst);
+
+  case INST_CALL:
+    return handle_call(vm, inst);
+
+  case INST_RET:
+    return handle_ret(vm, inst);
 
   case INST_HALT:
     vm->running = 0;
@@ -952,6 +959,69 @@ int handle_cmp(vm_t *vm, const instruction_t *inst) {
     vm->status_flags &= ~FLAG_OVERFLOW;
   }
 
+  return 1;
+}
+
+/**
+ * Handle CALL instruction - call subroutine
+ */
+int handle_call(vm_t *vm, const instruction_t *inst) {
+  // Get target address
+  int32_t target_address = get_operand_value(vm, &inst->operands[0]);
+
+  // Validate target address
+  if (target_address < 0 || target_address >= vm->program_size) {
+    vm_set_error(&vm->last_error, VM_ERROR_INVALID_MEMORY_ADDRESS,
+                 "Invalid call target address", vm->program_counter,
+                 target_address, NULL, "CALL");
+    return 0;
+  }
+
+  // Check if we have space on stack for return address
+  if (!validate_stack_operation(vm, 1)) { // 1 = push operation
+    vm_set_error(&vm->last_error, VM_ERROR_STACK_OVERFLOW,
+                 "Stack overflow on CALL", vm->program_counter, -1, NULL,
+                 "CALL");
+    return 0;
+  }
+
+  // Push return address (current PC + 1) onto stack
+  int32_t return_address = vm->program_counter + 1;
+  write_memory_32(vm, vm->stack_pointer - 3, return_address);
+  vm->stack_pointer -= 4;
+
+  // Jump to target address
+  vm->program_counter = target_address;
+  return 1;
+}
+
+/**
+ * Handle RET instruction - return from subroutine
+ */
+int handle_ret(vm_t *vm, const instruction_t *inst) {
+  (void)inst; // Unused parameter
+  // Check if stack has a return address
+  if (!validate_stack_operation(vm, 0)) { // 0 = pop operation
+    vm_set_error(&vm->last_error, VM_ERROR_STACK_UNDERFLOW,
+                 "Stack underflow on RET", vm->program_counter, -1, NULL,
+                 "RET");
+    return 0;
+  }
+
+  // Pop return address from stack
+  vm->stack_pointer += 4;
+  int32_t return_address = read_memory_32(vm, vm->stack_pointer - 3);
+
+  // Validate return address
+  if (return_address < 0 || return_address >= vm->program_size) {
+    vm_set_error(&vm->last_error, VM_ERROR_INVALID_MEMORY_ADDRESS,
+                 "Invalid return address", vm->program_counter, return_address,
+                 NULL, "RET");
+    return 0;
+  }
+
+  // Set program counter to return address
+  vm->program_counter = return_address;
   return 1;
 }
 

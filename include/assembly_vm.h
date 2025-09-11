@@ -15,11 +15,11 @@
 
 // Constants
 #define NUM_REGISTERS 8
-#define MEMORY_SIZE 1024
-#define MAX_INSTRUCTIONS 256
+#define MEMORY_SIZE 8192
+#define MAX_INSTRUCTIONS 2048
 #define MAX_LABEL_LENGTH 32
 #define MAX_LINE_LENGTH 128
-#define MAX_LABELS 64
+#define MAX_LABELS 256
 
 // Register indices
 #define R0 0
@@ -60,6 +60,8 @@ typedef enum {
   INST_PRINTS, // PRINTS "string" or PRINTS R1 (address)
   INST_INPUT,  // INPUT R1
   INST_CMP,    // CMP R1, R2 or CMP R1, #123
+  INST_CALL,   // CALL label or CALL 123 - call subroutine
+  INST_RET,    // RET - return from subroutine
   INST_HALT,   // HALT
   INST_NOP,    // NOP
   INST_UNKNOWN
@@ -177,5 +179,7 @@ int handle_print(vm_t *vm, const instruction_t *inst);
 int handle_prints(vm_t *vm, const instruction_t *inst);
 int handle_input(vm_t *vm, const instruction_t *inst);
 int handle_cmp(vm_t *vm, const instruction_t *inst);
+int handle_call(vm_t *vm, const instruction_t *inst);
+int handle_ret(vm_t *vm, const instruction_t *inst);
 
 #endif // ASSEMBLY_VM_H

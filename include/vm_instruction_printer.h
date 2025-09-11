@@ -25,8 +25,7 @@ typedef struct {
 void vm_print_instruction(const void *inst, const vm_print_context_t *context);
 void vm_print_instruction_simple(const void *inst);
 void vm_print_instruction_detailed(const void *inst, uint32_t address);
-void vm_print_instruction_objdump(const void *inst, uint32_t address,
-                                  const uint8_t *raw_bytes);
+void vm_print_instruction_objdump(const void *inst, uint32_t address, const uint8_t *raw_bytes);
 void vm_print_instruction_step(const void *inst, int instruction_num);
 
 // Helper functions

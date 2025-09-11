@@ -16,9 +16,9 @@ typedef struct {
 
 // Instruction names for disassembly
 static const char *instruction_names[] = {
-    "MOV",   "ADD", "SUB",  "MUL",  "DIV",    "LOAD",  "STORE",
-    "JMP",   "JZ",  "JNZ",  "PUSH", "POP",    "PRINT", "PRINTS",
-    "INPUT", "CMP", "HALT", "NOP",  "UNKNOWN"};
+    "MOV",   "ADD", "SUB",  "MUL",  "DIV",  "LOAD",  "STORE",
+    "JMP",   "JZ",  "JNZ",  "PUSH", "POP",  "PRINT", "PRINTS",
+    "INPUT", "CMP", "CALL", "RET",  "HALT", "NOP",   "UNKNOWN"};
 
 // Operand type names
 static const char *operand_type_names[] = {"REG", "IMM", "MEM", "LABEL/STR"};

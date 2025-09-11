@@ -24,8 +24,7 @@ int vm_is_valid_memory_address(int32_t address);
 int vm_is_valid_instruction_type(int type);
 
 // Error handling utilities
-void vm_set_error_simple(vm_error_t *error, vm_error_code_t code,
-                         const char *message);
+void vm_set_error_simple(vm_error_t *error, vm_error_code_t code, const char *message);
 void vm_print_error_simple(const vm_error_t *error);
 
 #endif // VM_UTILS_H

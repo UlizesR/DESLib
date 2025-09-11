@@ -29,10 +29,7 @@ void print_hex_byte(uint8_t byte) { printf("%02x", byte); }
 void print_hex_32(uint32_t value) { printf("%08x", value); }
 
 // Function to disassemble a single instruction with memory addresses
-void disassemble_instruction_objdump(uint8_t opcode, uint8_t operand_count,
-                                     uint8_t operand_types, int32_t *operands,
-                                     int instruction_num,
-                                     uint32_t base_address) {
+void disassemble_instruction_objdump(uint8_t opcode, uint8_t operand_count, uint8_t operand_types, int32_t *operands, int instruction_num, uint32_t base_address) {
   uint32_t instruction_address = base_address + (instruction_num * 16);
 
   // Print address and raw bytes
@@ -41,19 +38,12 @@ void disassemble_instruction_objdump(uint8_t opcode, uint8_t operand_count,
   // Print raw instruction bytes (16 bytes total)
   printf("%02x %02x %02x %02x ", opcode, operand_count, operand_types, 0);
   for (int i = 0; i < 3; i++) {
-    printf("%02x %02x %02x %02x ", (operands[i] >> 0) & 0xFF,
-           (operands[i] >> 8) & 0xFF, (operands[i] >> 16) & 0xFF,
-           (operands[i] >> 24) & 0xFF);
+    printf("%02x %02x %02x %02x ", (operands[i] >> 0) & 0xFF, (operands[i] >> 8) & 0xFF, (operands[i] >> 16) & 0xFF, (operands[i] >> 24) & 0xFF);
   }
   printf("  ");
 
   // Print disassembled instruction
-  printf(
-      "%-8s ",
-      instruction_names
-          [opcode < sizeof(instruction_names) / sizeof(instruction_names[0])
-               ? opcode
-               : sizeof(instruction_names) / sizeof(instruction_names[0]) - 1]);
+  printf("%-8s ",instruction_names[opcode < sizeof(instruction_names) / sizeof(instruction_names[0]) ? opcode : sizeof(instruction_names) / sizeof(instruction_names[0]) - 1]);
 
   // Print operands
   int operand_printed = 0;
@@ -92,8 +82,7 @@ void show_memory_layout(FILE *file, uint32_t program_size) {
   printf("\n=== Memory Layout ===\n");
   printf("Text Section (Instructions):\n");
   printf("  Start: 0x00000000\n");
-  printf("  Size:  %d bytes (%d instructions × 16 bytes)\n", program_size * 16,
-         program_size);
+  printf("  Size:  %d bytes (%d instructions × 16 bytes)\n", program_size * 16, program_size);
   printf("  End:   0x%08x\n", program_size * 16 - 1);
 
   printf("\nData Section (Strings):\n");
@@ -144,8 +133,7 @@ void show_symbol_table(FILE *file, uint32_t program_size) {
 int main(int argc, char *argv[]) {
   if (argc != 2) {
     printf("Usage: %s <binary_file.dez>\n", argv[0]);
-    printf("Disassembles a Dez binary file with memory addresses and execution "
-           "flow\n");
+    printf("Disassembles a Dez binary file with memory addresses and execution flow\n");
     printf("\nExample: %s bin/hello_world.dez\n", argv[0]);
     return 1;
   }
@@ -166,8 +154,7 @@ int main(int argc, char *argv[]) {
 
   // Validate magic number
   if (header.magic != DEZ_MAGIC) {
-    printf("Error: Invalid magic number 0x%08x (expected 0x%08x)\n",
-           header.magic, DEZ_MAGIC);
+    printf("Error: Invalid magic number 0x%08x (expected 0x%08x)\n", header.magic, DEZ_MAGIC);
     fclose(file);
     return 1;
   }
@@ -181,13 +168,13 @@ int main(int argc, char *argv[]) {
   printf("\n");
 
   // Show memory layout
-  show_memory_layout(file, header.program_size);
+  // show_memory_layout(file, header.program_size);
 
-  // Show execution flow
-  show_execution_flow(file, header.program_size);
+  // // Show execution flow
+  // show_execution_flow(file, header.program_size);
 
-  // Show symbol table
-  show_symbol_table(file, header.program_size);
+  // // Show symbol table
+  // show_symbol_table(file, header.program_size);
 
   // Disassemble instructions
   printf("\n=== Disassembly of .text section ===\n");
@@ -199,10 +186,7 @@ int main(int argc, char *argv[]) {
     int32_t operands[3];
 
     // Read instruction header
-    if (fread(&opcode, 1, 1, file) != 1 ||
-        fread(&operand_count, 1, 1, file) != 1 ||
-        fread(&operand_types, 1, 1, file) != 1 ||
-        fread(&reserved, 1, 1, file) != 1) {
+    if (fread(&opcode, 1, 1, file) != 1 || fread(&operand_count, 1, 1, file) != 1 || fread(&operand_types, 1, 1, file) != 1 || fread(&reserved, 1, 1, file) != 1) {
       printf("Error: Failed to read instruction header %d\n", i);
       fclose(file);
       return 1;
@@ -217,8 +201,7 @@ int main(int argc, char *argv[]) {
       }
     }
 
-    disassemble_instruction_objdump(opcode, operand_count, operand_types,
-                                    operands, i, 0x00000000);
+    disassemble_instruction_objdump(opcode, operand_count, operand_types, operands, i, 0x00000000);
 
     // Skip string data if present
     for (int j = 0; j < operand_count; j++) {
@@ -230,7 +213,7 @@ int main(int argc, char *argv[]) {
           fclose(file);
           return 1;
         }
-        break; // Only one string per instruction in our format
+        break; 
       }
     }
   }
