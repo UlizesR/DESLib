@@ -1,75 +1,65 @@
 cmake_minimum_required(VERSION 3.10)
 project(Dez VERSION 1.0.0 LANGUAGES C)
 
-# =============================================================================
-# Configuration
-# =============================================================================
-
 set(CMAKE_C_STANDARD 99)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 
+# Generate compile_commands.json for IDE support
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 # Compiler flags
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -g")
-set(CMAKE_C_FLAGS_DEBUG "-DDEBUG -O0")
-set(CMAKE_C_FLAGS_RELEASE "-O2 -DNDEBUG")
+set(CMAKE_C_FLAGS_DEBUG "-DDEBUG -O0 -DDEBUG_MEMORY_STATS")
+set(CMAKE_C_FLAGS_RELEASE "-O3 -DNDEBUG -flto -march=native")
 
-# =============================================================================
-# Source Files
-# =============================================================================
+# Include directories
+include_directories(src)
 
-set(DEZ_SOURCES
-    src/assembly_vm.c
-    src/vm_errors.c
-    src/vm_hash_table.c
-    src/vm_validation.c
-    src/vm_instruction_printer.c
-    src/vm_utils.c
-)
+# Create bin directory
+file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
-include_directories(include)
+# Automatically find all source files
+file(GLOB_RECURSE CORE_SOURCES "src/core/*.c")
+file(GLOB_RECURSE TEST_SOURCES "tests/*.c")
+file(GLOB_RECURSE TOOL_SOURCES "tools/*.c")
+file(GLOB_RECURSE ASSEMBLER_SOURCES "src/assembler/*.c")
 
-# =============================================================================
-# Executables
-# =============================================================================
+# VM Core Library
+add_library(dez_vm_core ${CORE_SOURCES} ${ASSEMBLER_SOURCES})
 
-# Main VM
-add_executable(dez dez.c ${DEZ_SOURCES})
-
-# Tools
-add_executable(dez_asm tools/asm.c ${DEZ_SOURCES})
-add_executable(dez_disasm tools/disasm.c ${DEZ_SOURCES})
-add_executable(dez_objdump tools/objdump.c ${DEZ_SOURCES})
-
-# =============================================================================
-# Testing
-# =============================================================================
-
-enable_testing()
-
-file(GLOB TEST_SOURCES "tests/test_*.c")
-
-foreach(TEST_SOURCE ${TEST_SOURCES})
-    get_filename_component(TEST_NAME ${TEST_SOURCE} NAME_WE)
-    add_executable(${TEST_NAME} ${TEST_SOURCE} ${DEZ_SOURCES})
-    target_include_directories(${TEST_NAME} PRIVATE include)
-    
-    string(REGEX REPLACE "^test_" "" TEST_CATEGORY ${TEST_NAME})
-    add_test(NAME ${TEST_CATEGORY}_operations 
-             COMMAND ${TEST_NAME} 
-             WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
-    set_tests_properties(${TEST_CATEGORY}_operations PROPERTIES
-        PASS_REGULAR_EXPRESSION "All .* tests passed!"
-        TIMEOUT 30
-    )
+# Test executables
+foreach(test_file ${TEST_SOURCES})
+    get_filename_component(test_name ${test_file} NAME_WE)
+    add_executable(${test_name} ${test_file})
+    target_link_libraries(${test_name} dez_vm_core)
+    set_target_properties(${test_name} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 endforeach()
 
-add_custom_target(run_tests
-    COMMAND ${CMAKE_CTEST_COMMAND} --verbose
-    COMMENT "Running all tests"
+# Tool executables
+foreach(tool_file ${TOOL_SOURCES})
+    get_filename_component(tool_name ${tool_file} NAME_WE)
+    add_executable(${tool_name} ${tool_file})
+    target_link_libraries(${tool_name} dez_vm_core)
+    set_target_properties(${tool_name} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+endforeach()
+
+# Assembler executable (only the main asm.c file)
+add_executable(asm src/assembler/asm.c)
+target_link_libraries(asm dez_vm_core)
+set_target_properties(asm PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+
+# Main VM executable
+add_executable(dez_vm src/main.c)
+target_link_libraries(dez_vm dez_vm_core)
+set_target_properties(dez_vm PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+
+# Installation
+install(TARGETS dez_vm asm disasm_tool performance_test test_memory test_vm
+    RUNTIME DESTINATION bin
 )
 
-# =============================================================================
-# Installation
-# =============================================================================
-
-install(TARGETS dez dez_asm dez_disasm dez_objdump DESTINATION bin)
+# Install headers
+file(GLOB_RECURSE HEADER_FILES "src/*.h")
+install(FILES ${HEADER_FILES}
+    DESTINATION include
+)
