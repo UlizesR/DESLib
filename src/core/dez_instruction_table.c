@@ -11,22 +11,29 @@ void execute_mov(dez_vm_t *vm, uint32_t instruction) {
 }
 
 void execute_store(dez_vm_t *vm, uint32_t instruction) {
-  vm->memory.memory[instruction & 0x0FFF] = vm->cpu.regs[instruction >> 20 & 0xF];
+  vm->memory.memory[instruction & 0x0FFF] =
+      vm->cpu.regs[instruction >> 20 & 0xF];
   vm->cpu.pc++;
 }
 
 void execute_add(dez_vm_t *vm, uint32_t instruction) {
-  vm->cpu.regs[instruction >> 20 & 0xF] = vm->cpu.regs[instruction >> 16 & 0xF] + vm->cpu.regs[instruction >> 12 & 0xF];
+  vm->cpu.regs[instruction >> 20 & 0xF] =
+      vm->cpu.regs[instruction >> 16 & 0xF] +
+      vm->cpu.regs[instruction >> 12 & 0xF];
   vm->cpu.pc++;
 }
 
 void execute_sub(dez_vm_t *vm, uint32_t instruction) {
-  vm->cpu.regs[instruction >> 20 & 0xF] = vm->cpu.regs[instruction >> 16 & 0xF] - vm->cpu.regs[instruction >> 12 & 0xF];
+  vm->cpu.regs[instruction >> 20 & 0xF] =
+      vm->cpu.regs[instruction >> 16 & 0xF] -
+      vm->cpu.regs[instruction >> 12 & 0xF];
   vm->cpu.pc++;
 }
 
 void execute_mul(dez_vm_t *vm, uint32_t instruction) {
-  vm->cpu.regs[instruction >> 20 & 0xF] = vm->cpu.regs[instruction >> 16 & 0xF] * vm->cpu.regs[instruction >> 12 & 0xF];
+  vm->cpu.regs[instruction >> 20 & 0xF] =
+      vm->cpu.regs[instruction >> 16 & 0xF] *
+      vm->cpu.regs[instruction >> 12 & 0xF];
   vm->cpu.pc++;
 }
 
@@ -37,7 +44,8 @@ void execute_div(dez_vm_t *vm, uint32_t instruction) {
     vm->cpu.state = VM_STATE_ERROR;
     return;
   }
-  vm->cpu.regs[instruction >> 20 & 0xF] = vm->cpu.regs[instruction >> 16 & 0xF] / divisor;
+  vm->cpu.regs[instruction >> 20 & 0xF] =
+      vm->cpu.regs[instruction >> 16 & 0xF] / divisor;
   vm->cpu.pc++;
 }
 
@@ -62,7 +70,10 @@ void execute_jnz(dez_vm_t *vm, uint32_t instruction) {
 }
 
 void execute_cmp(dez_vm_t *vm, uint32_t instruction) {
-  vm->cpu.flags = (vm->cpu.regs[instruction >> 20 & 0xF] == vm->cpu.regs[instruction >> 16 & 0xF]) ? 1 : 0;
+  vm->cpu.flags = (vm->cpu.regs[instruction >> 20 & 0xF] ==
+                   vm->cpu.regs[instruction >> 16 & 0xF])
+                      ? 1
+                      : 0;
   vm->cpu.pc++;
 }
 
@@ -141,7 +152,8 @@ void execute_nop(dez_vm_t *vm, uint32_t instruction) {
 }
 
 void execute_unknown(dez_vm_t *vm, uint32_t instruction) {
-  printf("Error: Unknown instruction 0x%02X at PC %04X\n", instruction >> 24, vm->cpu.pc);
+  printf("Error: Unknown instruction 0x%02X at PC %04X\n", instruction >> 24,
+         vm->cpu.pc);
   vm->cpu.state = VM_STATE_ERROR;
 }
 
@@ -163,7 +175,8 @@ static const instruction_info_t instruction_table[256] = {
 };
 
 // Static unknown instruction info to avoid stack return warning
-static const instruction_info_t unknown_instruction = {execute_unknown, 0, false, true, "UNKNOWN"};
+static const instruction_info_t unknown_instruction = {execute_unknown, 0,
+                                                       false, true, "UNKNOWN"};
 
 // Get instruction info
 const instruction_info_t *get_instruction_info(uint8_t opcode) {

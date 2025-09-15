@@ -6,13 +6,16 @@
 // Initialize symbol table
 void symbol_table_init(symbol_table_t *table) {
   table->count = 0;
-  table->next_string_addr = 0x100; // Start string storage at address 0x100 (fits in 12 bits)
+  table->next_string_addr =
+      0x100; // Start string storage at address 0x100 (fits in 12 bits)
   table->pass = 1;
   memset(table->symbols, 0, sizeof(table->symbols));
 }
 
 // Add symbol to table
-bool symbol_table_add(symbol_table_t *table, const char *name, symbol_type_t type, uint32_t address, uint32_t value, const char *string_value, int line) {
+bool symbol_table_add(symbol_table_t *table, const char *name,
+                      symbol_type_t type, uint32_t address, uint32_t value,
+                      const char *string_value, int line) {
   if (table->count >= 1024) {
     printf("Error: Symbol table full\n");
     return false;
@@ -21,7 +24,8 @@ bool symbol_table_add(symbol_table_t *table, const char *name, symbol_type_t typ
   // Check if symbol already exists
   symbol_t *existing = symbol_table_find(table, name);
   if (existing != NULL) {
-    printf("Error: Symbol '%s' already defined at line %d\n", name, existing->line);
+    printf("Error: Symbol '%s' already defined at line %d\n", name,
+           existing->line);
     return false;
   }
 
@@ -35,7 +39,8 @@ bool symbol_table_add(symbol_table_t *table, const char *name, symbol_type_t typ
   symbol->line = line;
 
   if (string_value != NULL) {
-    strncpy(symbol->string_value, string_value, sizeof(symbol->string_value) - 1);
+    strncpy(symbol->string_value, string_value,
+            sizeof(symbol->string_value) - 1);
     symbol->string_value[sizeof(symbol->string_value) - 1] = '\0';
   } else {
     symbol->string_value[0] = '\0';

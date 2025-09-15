@@ -21,7 +21,8 @@ void assembler_cleanup(assembler_t *assembler) {
 }
 
 // Assemble from file
-bool assembler_assemble_file(assembler_t *assembler, const char *input_file, const char *output_file) {
+bool assembler_assemble_file(assembler_t *assembler, const char *input_file,
+                             const char *output_file) {
   char *input = read_file_contents(input_file);
   if (!input) {
     printf("Error: Could not read input file '%s'\n", input_file);
@@ -37,13 +38,17 @@ bool assembler_assemble_file(assembler_t *assembler, const char *input_file, con
   if (success) {
     // Write output file
     if (strstr(output_file, ".hex")) {
-      success = write_hex_file(output_file, assembler->output_buffer, assembler->output_size);
+      success = write_hex_file(output_file, assembler->output_buffer,
+                               assembler->output_size);
     } else {
-      success = write_binary_file_with_strings(output_file, assembler->output_buffer, assembler->output_size, &assembler->symbol_table);
+      success = write_binary_file_with_strings(
+          output_file, assembler->output_buffer, assembler->output_size,
+          &assembler->symbol_table);
     }
 
     if (success) {
-      printf("Successfully assembled %d instructions to %s\n", assembler->output_size, output_file);
+      printf("Successfully assembled %d instructions to %s\n",
+             assembler->output_size, output_file);
     } else {
       printf("Error: Could not write output file '%s'\n", output_file);
     }
@@ -54,9 +59,11 @@ bool assembler_assemble_file(assembler_t *assembler, const char *input_file, con
 }
 
 // Assemble from string
-bool assembler_assemble_string(assembler_t *assembler, const char *input, uint32_t **output, int *size) {
+bool assembler_assemble_string(assembler_t *assembler, const char *input,
+                               uint32_t **output, int *size) {
   parser_t parser;
-  parser_init(&parser, input, &assembler->symbol_table, assembler->output_buffer, assembler->output_capacity);
+  parser_init(&parser, input, &assembler->symbol_table,
+              assembler->output_buffer, assembler->output_capacity);
 
   if (assembler->verbose) {
     printf("Starting assembly...\n");
@@ -88,7 +95,8 @@ bool assembler_assemble_string(assembler_t *assembler, const char *input, uint32
 
         // Update output size to include string data
         uint32_t end_addr = addr + len;
-        uint32_t end_word = (end_addr + sizeof(uint32_t) - 1) / sizeof(uint32_t);
+        uint32_t end_word =
+            (end_addr + sizeof(uint32_t) - 1) / sizeof(uint32_t);
         if (end_word > assembler->output_size) {
           assembler->output_size = end_word;
         }
@@ -177,7 +185,8 @@ bool write_binary_file(const char *filename, const uint32_t *data, int count) {
 }
 
 // Write binary file with string data appended
-bool write_binary_file_with_strings(const char *filename, const uint32_t *data, int count, symbol_table_t *symbol_table) {
+bool write_binary_file_with_strings(const char *filename, const uint32_t *data,
+                                    int count, symbol_table_t *symbol_table) {
   FILE *file = fopen(filename, "wb");
   if (!file) {
     return false;

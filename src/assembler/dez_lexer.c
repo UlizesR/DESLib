@@ -72,7 +72,8 @@ void lexer_skip_whitespace(lexer_t *lexer) {
 
 // Skip comment until end of line
 void lexer_skip_comment(lexer_t *lexer) {
-  while (lexer->input[lexer->position] != '\0' && lexer->input[lexer->position] != '\n') {
+  while (lexer->input[lexer->position] != '\0' &&
+         lexer->input[lexer->position] != '\n') {
     lexer->position++;
     lexer->column++;
   }
@@ -164,7 +165,8 @@ token_t lexer_next_token(lexer_t *lexer) {
     lexer->position++; // Skip opening quote
     lexer->column++;
 
-    while (lexer->input[lexer->position] != '\0' && lexer->input[lexer->position] != '"' && i < 255) {
+    while (lexer->input[lexer->position] != '\0' &&
+           lexer->input[lexer->position] != '"' && i < 255) {
       token.value[i++] = lexer->input[lexer->position++];
       lexer->column++;
     }
