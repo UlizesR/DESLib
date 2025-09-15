@@ -73,8 +73,7 @@ uint32_t memory_read_word_fast(dez_memory_t *mem, uint32_t address) {
 }
 
 // Fast path memory write (no validation, no statistics)
-int memory_write_word_fast(dez_memory_t *mem, uint32_t address,
-                           uint32_t value) {
+int memory_write_word_fast(dez_memory_t *mem, uint32_t address, uint32_t value) {
   mem->memory[address] = value;
   return 0;
 }
@@ -266,14 +265,10 @@ void memory_print_stats(dez_memory_t *mem) {
   }
 
   printf("\n=== Memory Statistics ===\n");
-  printf("Total Memory: %d words (%d bytes)\n", MEMORY_SIZE_WORDS,
-         MEMORY_SIZE_BYTES);
-  printf("Code Segment: 0x%04X - 0x%04X (%d words)\n", mem->code_start,
-         mem->code_end, CODE_SIZE);
-  printf("Data Segment: 0x%04X - 0x%04X (%d words)\n", mem->data_start,
-         mem->data_end, DATA_SIZE);
-  printf("Stack Segment: 0x%04X - 0x%04X (%d words)\n", mem->stack_start,
-         mem->stack_end, STACK_SIZE);
+  printf("Total Memory: %d words (%d bytes)\n", MEMORY_SIZE_WORDS, MEMORY_SIZE_BYTES);
+  printf("Code Segment: 0x%04X - 0x%04X (%d words)\n", mem->code_start, mem->code_end, CODE_SIZE);
+  printf("Data Segment: 0x%04X - 0x%04X (%d words)\n", mem->data_start, mem->data_end, DATA_SIZE);
+  printf("Stack Segment: 0x%04X - 0x%04X (%d words)\n", mem->stack_start, mem->stack_end, STACK_SIZE);
 
   printf("\nProtection Flags:\n");
   printf("  Code Read-Only: %s\n", mem->code_readonly ? "Yes" : "No");
@@ -283,8 +278,7 @@ void memory_print_stats(dez_memory_t *mem) {
   printf("\nUsage Statistics:\n");
   printf("  Code Usage: %d accesses\n", mem->code_usage);
   printf("  Data Usage: %d accesses\n", mem->data_usage);
-  printf("  Stack Usage: %d accesses (Max: %d)\n", mem->stack_usage,
-         mem->max_stack_usage);
+  printf("  Stack Usage: %d accesses (Max: %d)\n", mem->stack_usage, mem->max_stack_usage);
 
   printf("\nAccess Statistics:\n");
   printf("  Total Accesses: %d\n", mem->access_count);

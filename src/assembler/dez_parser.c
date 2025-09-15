@@ -4,8 +4,7 @@
 #include <string.h>
 
 // Initialize parser
-void parser_init(parser_t *parser, const char *input,
-                 symbol_table_t *symbol_table, uint32_t *output, int capacity) {
+void parser_init(parser_t *parser, const char *input, symbol_table_t *symbol_table, uint32_t *output, int capacity) {
   lexer_init(&parser->lexer, input);
   parser->symbol_table = symbol_table;
   parser->output = output;
