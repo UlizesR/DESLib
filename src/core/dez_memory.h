@@ -10,16 +10,16 @@
 
 // Segment boundaries for 16KB (4096 words)
 #define CODE_START 0x0000
-#define CODE_END 0x0FFF
-#define DATA_START 0x1000
-#define DATA_END 0x1FFF
-#define STACK_START 0x2000
-#define STACK_END 0x3FFF
+#define CODE_END 0x03FF // First 1KB (256 words)
+#define DATA_START 0x0400
+#define DATA_END 0x07FF // Second 1KB (256 words)
+#define STACK_START 0x0800
+#define STACK_END 0x0FFF // Last 2KB (512 words)
 
 // Segment sizes
-#define CODE_SIZE 0x1000  // 4KB (1024 words)
-#define DATA_SIZE 0x1000  // 4KB (1024 words)
-#define STACK_SIZE 0x2000 // 8KB (2048 words)
+#define CODE_SIZE 0x0400  // 1KB (256 words)
+#define DATA_SIZE 0x0400  // 1KB (256 words)
+#define STACK_SIZE 0x0800 // 2KB (512 words)
 
 typedef struct {
   uint32_t memory[MEMORY_SIZE_WORDS];

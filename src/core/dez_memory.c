@@ -130,7 +130,7 @@ uint32_t memory_read_word(dez_memory_t *mem, uint32_t address) {
     }
   }
 
-  return mem->memory[address];
+  return mem->memory[address >> 2];
 }
 
 // Write a 32-bit word to memory
@@ -198,7 +198,7 @@ int memory_write_word(dez_memory_t *mem, uint32_t address, uint32_t value) {
   }
 
   // Perform the write
-  mem->memory[address] = value;
+  mem->memory[address >> 2] = value;
   return 0; // Success
 }
 
