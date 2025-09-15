@@ -170,10 +170,11 @@ int test_jump_performance() {
   program[program_size++] = 0x10000001; // MOV R0, 1
   program[program_size++] = 0x10100002; // MOV R1, 2
   program[program_size++] = 0x10200003; // MOV R2, 3
-  
+
   // Add many jump operations (no loops)
   for (int i = 0; i < 100; i++) {
-    program[program_size++] = 0x08000000 | (program_size + 2); // JMP to next instruction
+    program[program_size++] =
+        0x08000000 | (program_size + 2);  // JMP to next instruction
     program[program_size++] = 0x04201000; // ADD R2, R0, R1
     program[program_size++] = 0x05302000; // SUB R3, R2, R0
   }
