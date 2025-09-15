@@ -13,23 +13,25 @@ int main() {
 
   // Test program:
   // MOV R0, 5
-  // MOV R1, 1
+  // MOV R1, 0
   // JMP 5        (jump to line 5)
-  // MOV R1, 0    (should be skipped)
+  // MOV R1, 1    (should be skipped)
   // MOV R2, 2    (should be skipped)
   // MOV R3, 10   (target of JMP)
-  // JZ R1, 9     (jump if R1 is zero to line 9)
+  // CMP R0, R1   (compare R0 with R1, sets flags)
+  // JZ 9         (jump if flags == 1 to line 9)
   // MOV R4, 20   (should execute)
   // MOV R5, 30   (target of JZ)
   // HALT
   uint32_t program[] = {
       0x10000005, // MOV R0, 5
-      0x10100001, // MOV R1, 1
+      0x10100000, // MOV R1, 0
       0x08000005, // JMP 5
-      0x10100000, // MOV R1, 0 (skipped)
+      0x10100001, // MOV R1, 1 (skipped)
       0x10200002, // MOV R2, 2 (skipped)
       0x1030000A, // MOV R3, 10 (target of JMP)
-      0x09010009, // JZ R1, 9 (should not jump since R1 = 1)
+      0x0E010000, // CMP R0, R1 (5 != 0, so flags = 0)
+      0x09000005, // JZ 5 (should not jump since flags = 0)
       0x10400014, // MOV R4, 20 (should execute)
       0x1050001E, // MOV R5, 30 (target of JZ)
       0x00000000  // HALT
@@ -50,7 +52,7 @@ int main() {
   // Check results
   printf("\nResults:\n");
   printf("R0: %d (expected: 5)\n", vm.cpu.regs[0]);
-  printf("R1: %d (expected: 1 - JMP should skip the MOV R1, 0)\n",
+  printf("R1: %d (expected: 0 - JMP should skip the MOV R1, 1)\n",
          vm.cpu.regs[1]);
   printf("R2: %d (expected: 0 - JMP should skip the MOV R2, 2)\n",
          vm.cpu.regs[2]);
@@ -60,7 +62,7 @@ int main() {
   // Verify results
   bool passed =
       (vm.cpu.state == VM_STATE_HALTED && vm.cpu.regs[0] == 5 &&
-       vm.cpu.regs[1] == 1 && vm.cpu.regs[2] == 0 && vm.cpu.regs[3] == 10 &&
+       vm.cpu.regs[1] == 0 && vm.cpu.regs[2] == 0 && vm.cpu.regs[3] == 10 &&
        vm.cpu.regs[4] == 20 && vm.cpu.regs[5] == 0);
 
   if (passed) {

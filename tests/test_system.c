@@ -1,5 +1,5 @@
-#include "core/dez_vm.h"
 #include "core/dez_memory.h"
+#include "core/dez_vm.h"
 #include <stdio.h>
 
 int main() {
@@ -19,12 +19,12 @@ int main() {
   // MOV R2, 0
   // SYS R2, EXIT      (exit with code 0)
   uint32_t program[] = {
-    0x1000002A, // MOV R0, 42
-    0x0D000001, // SYS R0, PRINT
-    0x10100041, // MOV R1, 65 ('A')
-    0x0D010002, // SYS R1, PRINT_CHAR
-    0x10200000, // MOV R2, 0
-    0x0D020004  // SYS R2, EXIT
+      0x1000002A, // MOV R0, 42
+      0x0D000001, // SYS R0, PRINT
+      0x10100041, // MOV R1, 65 ('A')
+      0x0D010002, // SYS R1, PRINT_CHAR
+      0x10200000, // MOV R2, 0
+      0x0D020004  // SYS R2, EXIT
   };
 
   // Load program
@@ -39,7 +39,7 @@ int main() {
   printf("Program loaded. Executing...\n");
   printf("Expected output: R0 = 42\nA\nProgram exited with code 0\n");
   printf("Actual output: ");
-  
+
   dez_vm_run(&vm);
 
   // Check results
@@ -50,10 +50,8 @@ int main() {
   printf("VM State: %d (expected: 1 for HALTED)\n", vm.cpu.state);
 
   // Verify results
-  bool passed = (vm.cpu.state == VM_STATE_HALTED &&
-                 vm.cpu.regs[0] == 42 &&
-                 vm.cpu.regs[1] == 65 &&
-                 vm.cpu.regs[2] == 0);
+  bool passed = (vm.cpu.state == VM_STATE_HALTED && vm.cpu.regs[0] == 42 &&
+                 vm.cpu.regs[1] == 65 && vm.cpu.regs[2] == 0);
 
   if (passed) {
     printf("\n✅ System calls test PASSED!\n");

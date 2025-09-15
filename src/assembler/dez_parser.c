@@ -359,8 +359,8 @@ uint32_t parser_encode_instruction(const parsed_instruction_t *inst) {
     return parser_encode_jump(inst->type, inst->operands[0].reg,
                               inst->operands[1].value);
   case INST_CMP:
-    return parser_encode_arithmetic(inst->type, 0, inst->operands[0].reg,
-                                    inst->operands[1].reg);
+    return parser_encode_arithmetic(inst->type, inst->operands[0].reg,
+                                    inst->operands[1].reg, 0);
   case INST_SYS:
     return parser_encode_sys(inst->operands[0].reg, inst->operands[1].value);
   case INST_HALT:

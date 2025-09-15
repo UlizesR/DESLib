@@ -1,5 +1,5 @@
-#include "core/dez_vm.h"
 #include "core/dez_memory.h"
+#include "core/dez_vm.h"
 #include <stdio.h>
 
 int main() {
@@ -13,11 +13,11 @@ int main() {
 
   // Test program: MOV R0, 42; MOV R1, 0x123; MOV R2, 999; MOV R3, 0; HALT
   uint32_t program[] = {
-    0x1000002A, // MOV R0, 42 (0x2A = 42)
-    0x10100123, // MOV R1, 0x123 (291)
-    0x102003E7, // MOV R2, 999 (0x3E7 = 999)
-    0x10300000, // MOV R3, 0
-    0x00000000  // HALT
+      0x1000002A, // MOV R0, 42 (0x2A = 42)
+      0x10100123, // MOV R1, 0x123 (291)
+      0x102003E7, // MOV R2, 999 (0x3E7 = 999)
+      0x10300000, // MOV R3, 0
+      0x00000000  // HALT
   };
 
   // Load program
@@ -40,11 +40,9 @@ int main() {
   printf("R3: %d (expected: 0)\n", vm.cpu.regs[3]);
 
   // Verify results
-  bool passed = (vm.cpu.state == VM_STATE_HALTED &&
-                 vm.cpu.regs[0] == 42 &&
-                 vm.cpu.regs[1] == 291 &&
-                 vm.cpu.regs[2] == 999 &&
-                 vm.cpu.regs[3] == 0);
+  bool passed =
+      (vm.cpu.state == VM_STATE_HALTED && vm.cpu.regs[0] == 42 &&
+       vm.cpu.regs[1] == 291 && vm.cpu.regs[2] == 999 && vm.cpu.regs[3] == 0);
 
   if (passed) {
     printf("\n✅ MOV instruction test PASSED!\n");

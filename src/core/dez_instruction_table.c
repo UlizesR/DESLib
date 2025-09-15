@@ -54,7 +54,7 @@ void execute_jmp(dez_vm_t *vm, uint32_t instruction) {
 }
 
 void execute_jz(dez_vm_t *vm, uint32_t instruction) {
-  if (vm->cpu.regs[instruction >> 20 & 0xF] == 0) {
+  if (vm->cpu.flags == 1) {
     vm->cpu.pc = instruction & 0x0FFF;
   } else {
     vm->cpu.pc++;
@@ -62,7 +62,7 @@ void execute_jz(dez_vm_t *vm, uint32_t instruction) {
 }
 
 void execute_jnz(dez_vm_t *vm, uint32_t instruction) {
-  if (vm->cpu.regs[instruction >> 20 & 0xF] != 0) {
+  if (vm->cpu.flags == 0) {
     vm->cpu.pc = instruction & 0x0FFF;
   } else {
     vm->cpu.pc++;

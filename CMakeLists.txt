@@ -63,3 +63,18 @@ file(GLOB_RECURSE HEADER_FILES "src/*.h")
 install(FILES ${HEADER_FILES}
     DESTINATION include
 )
+
+# Enable CTest
+enable_testing()
+
+# Add tests
+add_test(NAME test_arithmetic COMMAND test_arithmetic)
+add_test(NAME test_mov COMMAND test_mov)
+add_test(NAME test_memory_ops COMMAND test_memory_ops)
+add_test(NAME test_strings COMMAND test_strings)
+add_test(NAME test_system COMMAND test_system)
+add_test(NAME test_errors COMMAND test_errors)
+add_test(NAME test_jumps COMMAND test_jumps)
+add_test(NAME test_memory COMMAND test_memory)
+add_test(NAME test_vm COMMAND test_vm)
+add_test(NAME performance_test COMMAND performance_test)
