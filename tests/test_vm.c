@@ -18,10 +18,10 @@ int main() {
   // Temporarily disable code protection for program loading
   memory_set_protection(&vm.memory, 0, false);
 
-  // Simple program: LOAD R0, 5; LOAD R1, 3; ADD R2, R1, R0; SYS R2, PRINT; HALT
-  memory_write_word(&vm.memory, 0, 0x01000005); // LOAD R0, 5
-  memory_write_word(&vm.memory, 1, 0x01100003); // LOAD R1, 3
-  memory_write_word(&vm.memory, 2, 0x04210000); // ADD R2, R1, R0
+  // Simple program: MOV R0, 5; MOV R1, 3; ADD R2, R0, R1; SYS R2, PRINT; HALT
+  memory_write_word(&vm.memory, 0, 0x10000005); // MOV R0, 5
+  memory_write_word(&vm.memory, 1, 0x10100003); // MOV R1, 3
+  memory_write_word(&vm.memory, 2, 0x04201000); // ADD R2, R0, R1
   memory_write_word(&vm.memory, 3, 0x0D200001); // SYS R2, PRINT
   memory_write_word(&vm.memory, 4, 0x00000000); // HALT
 
@@ -39,7 +39,8 @@ int main() {
   printf("\nFinal VM state:\n");
   printf("PC: 0x%04X\n", vm.cpu.pc);
   printf("State: %d\n", vm.cpu.state);
-  printf("R0: %d, R1: %d, R2: %d\n", vm.cpu.regs[0], vm.cpu.regs[1], vm.cpu.regs[2]);
+  printf("R0: %d, R1: %d, R2: %d\n", vm.cpu.regs[0], vm.cpu.regs[1],
+         vm.cpu.regs[2]);
 
   // Verify expected results
   if (vm.cpu.state == VM_STATE_HALTED && vm.cpu.regs[2] == 8) {

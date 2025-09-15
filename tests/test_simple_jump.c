@@ -20,13 +20,13 @@ int main() {
   // MOV R3, 20   (target of JZ)
   // HALT
   uint32_t program[] = {
-    0x10000005, // MOV R0, 5
-    0x10100005, // MOV R1, 5
-    0x0E010000, // CMP R0, R1 (5 == 5, so flags = 1)
-    0x09000005, // JZ 5 (should jump since flags = 1)
-    0x1020000A, // MOV R2, 10 (should be skipped)
-    0x10300014, // MOV R3, 20 (target of JZ)
-    0x00000000  // HALT
+      0x10000005, // MOV R0, 5
+      0x10100005, // MOV R1, 5
+      0x0E010000, // CMP R0, R1 (5 == 5, so flags = 1)
+      0x09000005, // JZ 5 (should jump since flags = 1)
+      0x1020000A, // MOV R2, 10 (should be skipped)
+      0x10300014, // MOV R3, 20 (target of JZ)
+      0x00000000  // HALT
   };
 
   // Load program
@@ -49,8 +49,9 @@ int main() {
   printf("R3: %d (expected: 20 - target of JZ)\n", vm.cpu.regs[3]);
 
   // Verify results
-  bool passed = (vm.cpu.state == VM_STATE_HALTED && vm.cpu.regs[0] == 5 &&
-                 vm.cpu.regs[1] == 5 && vm.cpu.regs[2] == 0 && vm.cpu.regs[3] == 20);
+  bool passed =
+      (vm.cpu.state == VM_STATE_HALTED && vm.cpu.regs[0] == 5 &&
+       vm.cpu.regs[1] == 5 && vm.cpu.regs[2] == 0 && vm.cpu.regs[3] == 20);
 
   if (passed) {
     printf("\n✅ Simple jump test PASSED!\n");
