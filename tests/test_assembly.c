@@ -284,6 +284,139 @@ int test_assembly_errors() {
   return 0;
 }
 
+// Test label functionality
+int test_label_assembly() {
+  printf("\n--- Testing Label Assembly ---\n");
+
+  assembler_t assembler;
+  assembler_init(&assembler, 100, false);
+
+  const char *input_file = "../tests/asm/test_labels.s";
+  const char *output_file = "test_labels.bin";
+
+  // Assemble the file
+  bool success = assembler_assemble_file(&assembler, input_file, output_file);
+  if (!success) {
+    printf("FAILED: Could not assemble label test file\n");
+    assembler_cleanup(&assembler);
+    return 1;
+  }
+
+  // Load and run in VM
+  dez_vm_t vm;
+  dez_vm_init(&vm);
+  dez_vm_load_program(&vm, output_file);
+  dez_vm_run(&vm);
+
+  // Verify results - R1 should contain sum of 5+4+3+2+1 = 15
+  if (vm.cpu.regs[1] != 15) {
+    printf("FAILED: Expected R1=15, got R1=%u\n", vm.cpu.regs[1]);
+    printf("DEBUG: R0=%u, R1=%u\n", vm.cpu.regs[0], vm.cpu.regs[1]);
+    assembler_cleanup(&assembler);
+    return 1;
+  }
+
+  if (vm.cpu.regs[0] != 0) {
+    printf("FAILED: Expected R0=0, got R0=%u\n", vm.cpu.regs[0]);
+    assembler_cleanup(&assembler);
+    return 1;
+  }
+
+  assembler_cleanup(&assembler);
+  printf("Label assembly test: PASSED\n");
+  return 0;
+}
+
+// Test comment functionality
+int test_comment_assembly() {
+  printf("\n--- Testing Comment Assembly ---\n");
+
+  assembler_t assembler;
+  assembler_init(&assembler, 100, false);
+
+  const char *input_file = "../tests/asm/test_comments.s";
+  const char *output_file = "test_comments.bin";
+
+  // Assemble the file
+  bool success = assembler_assemble_file(&assembler, input_file, output_file);
+  if (!success) {
+    printf("FAILED: Could not assemble comment test file\n");
+    assembler_cleanup(&assembler);
+    return 1;
+  }
+
+  // Load and run in VM
+  dez_vm_t vm;
+  dez_vm_init(&vm);
+  dez_vm_load_program(&vm, output_file);
+  dez_vm_run(&vm);
+
+  // Verify results
+  if (vm.cpu.regs[0] != 42) {
+    printf("FAILED: Expected R0=42, got R0=%u\n", vm.cpu.regs[0]);
+    assembler_cleanup(&assembler);
+    return 1;
+  }
+
+  if (vm.cpu.regs[1] != 10) {
+    printf("FAILED: Expected R1=10, got R1=%u\n", vm.cpu.regs[1]);
+    assembler_cleanup(&assembler);
+    return 1;
+  }
+
+  assembler_cleanup(&assembler);
+  printf("Comment assembly test: PASSED\n");
+  return 0;
+}
+
+// Test mixed labels and comments
+int test_mixed_assembly() {
+  printf("\n--- Testing Mixed Labels and Comments ---\n");
+
+  assembler_t assembler;
+  assembler_init(&assembler, 100, false);
+
+  const char *input_file = "../tests/asm/test_mixed.s";
+  const char *output_file = "test_mixed.bin";
+
+  // Assemble the file
+  bool success = assembler_assemble_file(&assembler, input_file, output_file);
+  if (!success) {
+    printf("FAILED: Could not assemble mixed test file\n");
+    assembler_cleanup(&assembler);
+    return 1;
+  }
+
+  // Load and run in VM
+  dez_vm_t vm;
+  dez_vm_init(&vm);
+  dez_vm_load_program(&vm, output_file);
+  dez_vm_run(&vm);
+
+  // Verify results - R0=5, R1=10, so they're not equal, R2 should be 0
+  if (vm.cpu.regs[0] != 5) {
+    printf("FAILED: Expected R0=5, got R0=%u\n", vm.cpu.regs[0]);
+    assembler_cleanup(&assembler);
+    return 1;
+  }
+
+  if (vm.cpu.regs[1] != 10) {
+    printf("FAILED: Expected R1=10, got R1=%u\n", vm.cpu.regs[1]);
+    assembler_cleanup(&assembler);
+    return 1;
+  }
+
+  if (vm.cpu.regs[2] != 0) {
+    printf("FAILED: Expected R2=0, got R2=%u\n", vm.cpu.regs[2]);
+    assembler_cleanup(&assembler);
+    return 1;
+  }
+
+  assembler_cleanup(&assembler);
+  printf("Mixed labels and comments test: PASSED\n");
+  return 0;
+}
+
 int main() {
   printf("=== DEZ Assembly and VM Integration Tests ===\n\n");
 
@@ -296,6 +429,15 @@ int main() {
   result += test_system_assembly();
   result += test_loop_assembly();
   result += test_assembly_errors();
+
+  // Test label functionality
+  result |= test_label_assembly();
+
+  // Test comment functionality
+  result |= test_comment_assembly();
+
+  // Test mixed labels and comments
+  result |= test_mixed_assembly();
 
   printf("\n=== Test Results ===\n");
   if (result == 0) {

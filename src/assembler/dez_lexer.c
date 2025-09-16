@@ -158,6 +158,24 @@ token_t lexer_next_token(lexer_t *lexer) {
     return token;
   }
 
+  // Comment (semicolon)
+  if (c == ';') {
+    token.type = TOKEN_COMMENT;
+    token.value[0] = c;
+    token.value[1] = '\0';
+    lexer->position++;
+    lexer->column++;
+
+    // Skip the rest of the comment until end of line
+    while (lexer->input[lexer->position] != '\0' &&
+           lexer->input[lexer->position] != '\n') {
+      lexer->position++;
+      lexer->column++;
+    }
+
+    return token;
+  }
+
   // String literal
   if (c == '"') {
     token.type = TOKEN_STRING;

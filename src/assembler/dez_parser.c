@@ -22,7 +22,7 @@ bool parser_parse(parser_t *parser) {
   parser->pass = 1;
   parser->symbol_table->pass = 1;
   while (!parser->error && parser_current_token(parser).type != TOKEN_EOF) {
-    if (!parser_parse_line(parser)) {
+    if (!parser_parse_line_with_labels(parser)) {
       break;
     }
   }
@@ -39,7 +39,7 @@ bool parser_parse(parser_t *parser) {
   lexer_init(&parser->lexer, parser->lexer.input); // Reset lexer
 
   while (!parser->error && parser_current_token(parser).type != TOKEN_EOF) {
-    if (!parser_parse_line(parser)) {
+    if (!parser_parse_line_with_labels(parser)) {
       break;
     }
   }
@@ -47,8 +47,8 @@ bool parser_parse(parser_t *parser) {
   return !parser->error;
 }
 
-// Parse a single line
-bool parser_parse_line(parser_t *parser) {
+// Parse a single line with label handling
+bool parser_parse_line_with_labels(parser_t *parser) {
   token_t token = parser_current_token(parser);
 
   // Skip empty lines
@@ -57,11 +57,52 @@ bool parser_parse_line(parser_t *parser) {
     return true;
   }
 
-  // Parse label
+  // Skip comment lines
+  if (token.type == TOKEN_COMMENT) {
+    parser_advance(parser);
+    return true;
+  }
+
+  // Check if this is a label definition using string approach
   if (token.type == TOKEN_IDENTIFIER) {
-    token_t next = parser_peek_token(parser);
-    if (next.type == TOKEN_COLON) {
-      return parser_parse_label(parser);
+    // Get the current line to check if it ends with ':'
+    const char *input = parser->lexer.input;
+    int pos = parser->lexer.position;
+
+    // Find the start of current line
+    int line_start = pos;
+    while (line_start > 0 && input[line_start - 1] != '\n') {
+      line_start--;
+    }
+
+    // Find the end of current line (before any comment)
+    int line_end = pos;
+    while (input[line_end] != '\0' && input[line_end] != '\n' &&
+           input[line_end] != ';') {
+      line_end++;
+    }
+
+    // Skip whitespace before checking for ':'
+    int colon_pos = line_end - 1;
+    while (colon_pos >= line_start &&
+           (input[colon_pos] == ' ' || input[colon_pos] == '\t')) {
+      colon_pos--;
+    }
+
+    // Check if line ends with ':'
+    if (colon_pos >= line_start && input[colon_pos] == ':') {
+      // This is a label definition
+      if (parser->pass == 1) {
+        // Define label
+        symbol_table_define(parser->symbol_table, token.value,
+                            parser->current_address, token.line);
+      }
+      // Skip the rest of the line
+      while (parser_current_token(parser).type != TOKEN_NEWLINE &&
+             parser_current_token(parser).type != TOKEN_EOF) {
+        parser_advance(parser);
+      }
+      return true;
     }
   }
 
@@ -90,6 +131,52 @@ bool parser_parse_line(parser_t *parser) {
     return true;
   }
 
+  // If we get here, it's an error - unknown instruction
+  return false;
+}
+
+// Parse a single line (legacy function)
+bool parser_parse_line(parser_t *parser) {
+  token_t token = parser_current_token(parser);
+
+  // Skip empty lines
+  if (token.type == TOKEN_NEWLINE) {
+    parser_advance(parser);
+    return true;
+  }
+
+  // Skip comment lines
+  if (token.type == TOKEN_COMMENT) {
+    parser_advance(parser);
+    return true;
+  }
+
+  // Parse constant definition
+  if (token.type == TOKEN_IDENTIFIER) {
+    token_t next = parser_peek_token(parser);
+    if (next.type == TOKEN_IDENTIFIER && strcmp(next.value, "EQU") == 0) {
+      return parser_parse_constant(parser);
+    }
+  }
+
+  // Parse instruction
+  parsed_instruction_t inst;
+  if (parser_parse_instruction(parser, &inst)) {
+    if (parser->pass == 2) {
+      // Generate binary code
+      uint32_t encoded = parser_encode_instruction(&inst);
+      if (parser->output_size < parser->output_capacity) {
+        parser->output[parser->output_size++] = encoded;
+      } else {
+        parser_error(parser, "Output buffer overflow");
+        return false;
+      }
+    }
+    parser->current_address++;
+    return true;
+  }
+
+  // If we get here, it's an error - unknown instruction
   return false;
 }
 
@@ -339,6 +426,12 @@ uint32_t parser_encode_instruction(const parsed_instruction_t *inst) {
       symbol_t *sym = symbol_table_find(inst->symbol_table, symbol_name);
       uint32_t string_addr = sym ? sym->address : 0;
       return parser_encode_mov(inst->operands[0].reg, string_addr);
+    } else if (inst->operands[1].type == OP_LABEL) {
+      // Resolve label to address
+      symbol_t *sym =
+          symbol_table_find(inst->symbol_table, inst->operands[1].label);
+      uint32_t label_addr = sym ? sym->address : 0;
+      return parser_encode_mov(inst->operands[0].reg, label_addr);
     } else {
       return parser_encode_mov(inst->operands[0].reg, inst->operands[1].value);
     }
@@ -349,17 +442,50 @@ uint32_t parser_encode_instruction(const parsed_instruction_t *inst) {
   case INST_SUB:
   case INST_MUL:
   case INST_DIV:
-    return parser_encode_arithmetic(inst->type, inst->operands[0].reg,
-                                    inst->operands[1].reg,
-                                    inst->operands[2].reg);
+    // Check if the third operand is an immediate value
+    if (inst->operands[2].type == OP_IMMEDIATE) {
+      // Encode as (opcode << 24) | (reg1 << 20) | (reg2 << 16) | (1 << 11) |
+      // immediate Use bit 11 as a flag to indicate immediate mode
+      return (inst->type << 24) | (inst->operands[0].reg << 20) |
+             (inst->operands[1].reg << 16) | (1 << 11) |
+             (inst->operands[2].value & 0x07FF);
+    } else {
+      // Register-to-register operation
+      return parser_encode_arithmetic(inst->type, inst->operands[0].reg,
+                                      inst->operands[1].reg,
+                                      inst->operands[2].reg);
+    }
   case INST_JMP:
-    return parser_encode_jump(inst->type, 0, inst->operands[0].value);
+    if (inst->operands[0].type == OP_LABEL) {
+      // Resolve label to address
+      symbol_t *sym =
+          symbol_table_find(inst->symbol_table, inst->operands[0].label);
+      uint32_t label_addr = sym ? sym->address : 0;
+      return parser_encode_jump(inst->type, 0, label_addr);
+    } else {
+      return parser_encode_jump(inst->type, 0, inst->operands[0].value);
+    }
   case INST_JZ:
   case INST_JNZ:
-    return parser_encode_jump(inst->type, 0, inst->operands[0].value);
+    if (inst->operands[0].type == OP_LABEL) {
+      // Resolve label to address
+      symbol_t *sym =
+          symbol_table_find(inst->symbol_table, inst->operands[0].label);
+      uint32_t label_addr = sym ? sym->address : 0;
+      return parser_encode_jump(inst->type, 0, label_addr);
+    } else {
+      return parser_encode_jump(inst->type, 0, inst->operands[0].value);
+    }
   case INST_CMP:
-    return parser_encode_arithmetic(inst->type, inst->operands[0].reg,
-                                    inst->operands[1].reg, 0);
+    if (inst->operands[1].type == OP_IMMEDIATE) {
+      // CMP with immediate value - encode as (opcode << 24) | (reg << 20) |
+      // immediate
+      return (INST_CMP << 24) | (inst->operands[0].reg << 20) |
+             (inst->operands[1].value & 0x0FFF);
+    } else {
+      return parser_encode_arithmetic(inst->type, inst->operands[0].reg,
+                                      inst->operands[1].reg, 0);
+    }
   case INST_SYS:
     return parser_encode_sys(inst->operands[0].reg, inst->operands[1].value);
   case INST_HALT:

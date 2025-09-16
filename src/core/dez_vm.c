@@ -107,17 +107,25 @@ void dez_vm_step(dez_vm_t *vm) {
   uint8_t opcode = instruction >> 24;
   const instruction_info_t *info = get_instruction_info(opcode);
 
+  // Store the current PC to check if it was modified by the instruction
+  uint32_t old_pc = vm->cpu.pc;
+
   // Execute instruction using dispatch table
   info->execute(vm, instruction);
+
+  // Only increment PC if the instruction didn't modify it
+  if (vm->cpu.pc == old_pc) {
+    vm->cpu.pc += info->pc_increment;
+  }
 }
 
 // Run the VM until halt or error
 void dez_vm_run(dez_vm_t *vm) {
+  int step_count = 0; // Reset step count for each run
   while (vm->cpu.state == VM_STATE_RUNNING) {
     dez_vm_step(vm);
 
     // Safety check to prevent infinite loops
-    static int step_count = 0;
     if (++step_count > 10000) {
       printf("Error: Too many steps, possible infinite loop\n");
       vm->cpu.state = VM_STATE_ERROR;

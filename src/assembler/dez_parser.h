@@ -34,6 +34,7 @@ void parser_init(parser_t *parser, const char *input,
                  symbol_table_t *symbol_table, uint32_t *output, int capacity);
 bool parser_parse(parser_t *parser);
 bool parser_parse_line(parser_t *parser);
+bool parser_parse_line_with_labels(parser_t *parser);
 bool parser_parse_instruction(parser_t *parser, parsed_instruction_t *inst);
 bool parser_parse_operand(parser_t *parser, dez_operand_t *operand);
 bool parser_parse_label(parser_t *parser);

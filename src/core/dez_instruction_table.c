@@ -7,34 +7,51 @@
 // Instruction execution functions
 void execute_mov(dez_vm_t *vm, uint32_t instruction) {
   vm->cpu.regs[instruction >> 20 & 0xF] = instruction & 0x0FFF;
-  vm->cpu.pc++;
 }
 
 void execute_store(dez_vm_t *vm, uint32_t instruction) {
   vm->memory.memory[instruction & 0x0FFF] =
       vm->cpu.regs[instruction >> 20 & 0xF];
-  vm->cpu.pc++;
 }
 
 void execute_add(dez_vm_t *vm, uint32_t instruction) {
-  vm->cpu.regs[instruction >> 20 & 0xF] =
-      vm->cpu.regs[instruction >> 16 & 0xF] +
-      vm->cpu.regs[instruction >> 12 & 0xF];
-  vm->cpu.pc++;
+  uint8_t reg1 = instruction >> 20 & 0xF;
+  uint8_t reg2 = instruction >> 16 & 0xF;
+  uint8_t reg3 = instruction >> 12 & 0xF;
+  uint32_t immediate = instruction & 0x07FF;
+  bool immediate_mode = (instruction & (1 << 11)) != 0;
+
+  // Check if this is register-to-immediate addition
+  if (immediate_mode) {
+    // Register-to-immediate addition
+    vm->cpu.regs[reg1] = vm->cpu.regs[reg2] + immediate;
+  } else {
+    // Register-to-register addition
+    vm->cpu.regs[reg1] = vm->cpu.regs[reg2] + vm->cpu.regs[reg3];
+  }
 }
 
 void execute_sub(dez_vm_t *vm, uint32_t instruction) {
-  vm->cpu.regs[instruction >> 20 & 0xF] =
-      vm->cpu.regs[instruction >> 16 & 0xF] -
-      vm->cpu.regs[instruction >> 12 & 0xF];
-  vm->cpu.pc++;
+  uint8_t reg1 = instruction >> 20 & 0xF;
+  uint8_t reg2 = instruction >> 16 & 0xF;
+  uint8_t reg3 = instruction >> 12 & 0xF;
+  uint32_t immediate = instruction & 0x07FF;
+  bool immediate_mode = (instruction & (1 << 11)) != 0;
+
+  // Check if this is register-to-immediate subtraction
+  if (immediate_mode) {
+    // Register-to-immediate subtraction
+    vm->cpu.regs[reg1] = vm->cpu.regs[reg2] - immediate;
+  } else {
+    // Register-to-register subtraction
+    vm->cpu.regs[reg1] = vm->cpu.regs[reg2] - vm->cpu.regs[reg3];
+  }
 }
 
 void execute_mul(dez_vm_t *vm, uint32_t instruction) {
   vm->cpu.regs[instruction >> 20 & 0xF] =
       vm->cpu.regs[instruction >> 16 & 0xF] *
       vm->cpu.regs[instruction >> 12 & 0xF];
-  vm->cpu.pc++;
 }
 
 void execute_div(dez_vm_t *vm, uint32_t instruction) {
@@ -46,7 +63,6 @@ void execute_div(dez_vm_t *vm, uint32_t instruction) {
   }
   vm->cpu.regs[instruction >> 20 & 0xF] =
       vm->cpu.regs[instruction >> 16 & 0xF] / divisor;
-  vm->cpu.pc++;
 }
 
 void execute_jmp(dez_vm_t *vm, uint32_t instruction) {
@@ -56,25 +72,30 @@ void execute_jmp(dez_vm_t *vm, uint32_t instruction) {
 void execute_jz(dez_vm_t *vm, uint32_t instruction) {
   if (vm->cpu.flags == 1) {
     vm->cpu.pc = instruction & 0x0FFF;
-  } else {
-    vm->cpu.pc++;
   }
+  // If condition not met, let VM handle PC increment
 }
 
 void execute_jnz(dez_vm_t *vm, uint32_t instruction) {
   if (vm->cpu.flags == 0) {
     vm->cpu.pc = instruction & 0x0FFF;
-  } else {
-    vm->cpu.pc++;
   }
+  // If condition not met, let VM handle PC increment
 }
 
 void execute_cmp(dez_vm_t *vm, uint32_t instruction) {
-  vm->cpu.flags = (vm->cpu.regs[instruction >> 20 & 0xF] ==
-                   vm->cpu.regs[instruction >> 16 & 0xF])
-                      ? 1
-                      : 0;
-  vm->cpu.pc++;
+  uint8_t reg1 = instruction >> 20 & 0xF;
+  uint8_t reg2 = instruction >> 16 & 0xF;
+  uint32_t immediate = instruction & 0x0FFF;
+
+  // Check if this is register-to-register comparison (reg2 != 0)
+  if (reg2 != 0) {
+    // Register-to-register comparison
+    vm->cpu.flags = (vm->cpu.regs[reg1] == vm->cpu.regs[reg2]) ? 1 : 0;
+  } else {
+    // Register-to-immediate comparison
+    vm->cpu.flags = (vm->cpu.regs[reg1] == immediate) ? 1 : 0;
+  }
 }
 
 void execute_sys(dez_vm_t *vm, uint32_t instruction) {
@@ -137,7 +158,6 @@ void execute_sys(dez_vm_t *vm, uint32_t instruction) {
   } else {
     printf("Unknown system call: %d\n", immediate);
   }
-  vm->cpu.pc++;
 }
 
 void execute_halt(dez_vm_t *vm, uint32_t instruction) {
@@ -148,7 +168,6 @@ void execute_halt(dez_vm_t *vm, uint32_t instruction) {
 
 void execute_nop(dez_vm_t *vm, uint32_t instruction) {
   (void)instruction; // Suppress unused parameter warning
-  vm->cpu.pc++;
 }
 
 void execute_unknown(dez_vm_t *vm, uint32_t instruction) {
@@ -166,8 +185,8 @@ static const instruction_info_t instruction_table[256] = {
     [INST_MUL] = {execute_mul, 1, false, false, "MUL"},
     [INST_DIV] = {execute_div, 1, false, false, "DIV"},
     [INST_JMP] = {execute_jmp, 0, false, false, "JMP"},
-    [INST_JZ] = {execute_jz, 0, false, false, "JZ"},
-    [INST_JNZ] = {execute_jnz, 0, false, false, "JNZ"},
+    [INST_JZ] = {execute_jz, 1, false, false, "JZ"},
+    [INST_JNZ] = {execute_jnz, 1, false, false, "JNZ"},
     [INST_CMP] = {execute_cmp, 1, false, false, "CMP"},
     [INST_SYS] = {execute_sys, 1, false, false, "SYS"},
     [INST_HALT] = {execute_halt, 0, false, false, "HALT"},
