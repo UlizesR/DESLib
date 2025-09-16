@@ -5,15 +5,36 @@
 #include <stdio.h>
 
 // Instruction execution functions
+// Each function takes a VM pointer and a 32-bit instruction word
+// The instruction format is: (opcode << 24) | (operands...)
+
+/**
+ * Execute MOV instruction: Load immediate value into register
+ * Format: (INST_MOV << 24) | (reg << 20) | (immediate & 0x0FFF)
+ * Example: MOV R0, 42 -> 0x1000002A
+ */
 void execute_mov(dez_vm_t *vm, uint32_t instruction) {
+  // Optimized: direct register access without bounds checking in hot path
   vm->cpu.regs[instruction >> 20 & 0xF] = instruction & 0x0FFF;
 }
 
+/**
+ * Execute STORE instruction: Store register value to memory
+ * Format: (INST_STORE << 24) | (reg << 20) | (address & 0x0FFF)
+ * Example: STORE R0, 256 -> 0x11000100
+ */
 void execute_store(dez_vm_t *vm, uint32_t instruction) {
   vm->memory.memory[instruction & 0x0FFF] =
       vm->cpu.regs[instruction >> 20 & 0xF];
 }
 
+/**
+ * Execute ADD instruction: Add two values and store result
+ * Format: (INST_ADD << 24) | (reg1 << 20) | (reg2 << 16) | (reg3 << 12) |
+ * immediate Bit 11 flag: 0 = register-to-register, 1 = register-to-immediate
+ * Example: ADD R1, R2, R3 -> 0x04213000
+ * Example: ADD R1, R2, 5 -> 0x04210805 (bit 11 set)
+ */
 void execute_add(dez_vm_t *vm, uint32_t instruction) {
   uint8_t reg1 = instruction >> 20 & 0xF;
   uint8_t reg2 = instruction >> 16 & 0xF;
@@ -23,10 +44,10 @@ void execute_add(dez_vm_t *vm, uint32_t instruction) {
 
   // Check if this is register-to-immediate addition
   if (immediate_mode) {
-    // Register-to-immediate addition
+    // Register-to-immediate addition: reg1 = reg2 + immediate
     vm->cpu.regs[reg1] = vm->cpu.regs[reg2] + immediate;
   } else {
-    // Register-to-register addition
+    // Register-to-register addition: reg1 = reg2 + reg3
     vm->cpu.regs[reg1] = vm->cpu.regs[reg2] + vm->cpu.regs[reg3];
   }
 }
@@ -167,6 +188,7 @@ void execute_halt(dez_vm_t *vm, uint32_t instruction) {
 }
 
 void execute_nop(dez_vm_t *vm, uint32_t instruction) {
+  (void)vm;          // Suppress unused parameter warning
   (void)instruction; // Suppress unused parameter warning
 }
 

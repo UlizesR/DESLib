@@ -36,27 +36,28 @@ void memory_init(dez_memory_t *mem) {
 }
 
 // Check if an address is within valid bounds
-static bool memory_is_valid_address(dez_memory_t *mem, uint32_t address) {
+bool memory_is_valid_address(dez_memory_t *mem, uint32_t address) {
+  (void)mem; // Suppress unused parameter warning
   return (address < MEMORY_SIZE_WORDS);
 }
 
 // Check if an address is in the code segment
-static bool memory_is_code_segment(dez_memory_t *mem, uint32_t address) {
+bool memory_is_code_segment(dez_memory_t *mem, uint32_t address) {
   return (address >= mem->code_start && address <= mem->code_end);
 }
 
 // Check if an address is in the data segment
-static bool memory_is_data_segment(dez_memory_t *mem, uint32_t address) {
+bool memory_is_data_segment(dez_memory_t *mem, uint32_t address) {
   return (address >= mem->data_start && address <= mem->data_end);
 }
 
 // Check if an address is in the stack segment
-static bool memory_is_stack_segment(dez_memory_t *mem, uint32_t address) {
+bool memory_is_stack_segment(dez_memory_t *mem, uint32_t address) {
   return (address >= mem->stack_start && address <= mem->stack_end);
 }
 
 // Check if an address can be written to
-static bool memory_can_write(dez_memory_t *mem, uint32_t address) {
+bool memory_can_write(dez_memory_t *mem, uint32_t address) {
   if (memory_is_code_segment(mem, address)) {
     return !mem->code_readonly;
   } else if (memory_is_data_segment(mem, address)) {
@@ -325,29 +326,4 @@ void memory_set_protection(dez_memory_t *mem, uint32_t segment, bool readonly) {
     mem->stack_writable = !readonly;
     break;
   }
-}
-
-// Check if an address is valid (public interface)
-bool memory_is_valid_address_public(dez_memory_t *mem, uint32_t address) {
-  return memory_is_valid_address(mem, address);
-}
-
-// Check if an address is in code segment (public interface)
-bool memory_is_code_segment_public(dez_memory_t *mem, uint32_t address) {
-  return memory_is_code_segment(mem, address);
-}
-
-// Check if an address is in data segment (public interface)
-bool memory_is_data_segment_public(dez_memory_t *mem, uint32_t address) {
-  return memory_is_data_segment(mem, address);
-}
-
-// Check if an address is in stack segment (public interface)
-bool memory_is_stack_segment_public(dez_memory_t *mem, uint32_t address) {
-  return memory_is_stack_segment(mem, address);
-}
-
-// Check if an address can be written to (public interface)
-bool memory_can_write_public(dez_memory_t *mem, uint32_t address) {
-  return memory_can_write(mem, address);
 }

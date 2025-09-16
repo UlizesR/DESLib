@@ -36,19 +36,19 @@ int test_memory_segments() {
   memory_init(&mem);
 
   // Test code segment
-  assert(memory_is_code_segment_public(&mem, 0x0000) == true);
-  assert(memory_is_code_segment_public(&mem, 0x03FF) == true);
-  assert(memory_is_code_segment_public(&mem, 0x0400) == false);
+  assert(memory_is_code_segment(&mem, 0x0000) == true);
+  assert(memory_is_code_segment(&mem, 0x03FF) == true);
+  assert(memory_is_code_segment(&mem, 0x0400) == false);
 
   // Test data segment
-  assert(memory_is_data_segment_public(&mem, 0x0400) == true);
-  assert(memory_is_data_segment_public(&mem, 0x07FF) == true);
-  assert(memory_is_data_segment_public(&mem, 0x0800) == false);
+  assert(memory_is_data_segment(&mem, 0x0400) == true);
+  assert(memory_is_data_segment(&mem, 0x07FF) == true);
+  assert(memory_is_data_segment(&mem, 0x0800) == false);
 
   // Test stack segment
-  assert(memory_is_stack_segment_public(&mem, 0x0800) == true);
-  assert(memory_is_stack_segment_public(&mem, 0x0FFF) == true);
-  assert(memory_is_stack_segment_public(&mem, 0x1000) == false);
+  assert(memory_is_stack_segment(&mem, 0x0800) == true);
+  assert(memory_is_stack_segment(&mem, 0x0FFF) == true);
+  assert(memory_is_stack_segment(&mem, 0x1000) == false);
 
   printf("✅ Memory segment detection test passed\n");
   return 0;
@@ -216,13 +216,14 @@ int test_memory_performance() {
     uint32_t addr = 0x0100 + (i % 100); // Cycle through valid addresses
     memory_write_word(&mem, addr, i);
     uint32_t value = memory_read_word(&mem, addr);
-    assert(value == i);
+    assert(value == (uint32_t)i);
   }
 
   clock_t end = clock();
   double time_taken = ((double)(end - start)) / CLOCKS_PER_SEC;
 
-  printf("  Performed %d memory operations in %.6f seconds\n", num_ops * 2, time_taken);
+  printf("  Performed %d memory operations in %.6f seconds\n", num_ops * 2,
+         time_taken);
   printf("  Operations per second: %.0f\n", (num_ops * 2) / time_taken);
 
   printf("✅ Memory performance test passed\n");

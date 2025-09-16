@@ -10,7 +10,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 # Compiler flags
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -g")
 set(CMAKE_C_FLAGS_DEBUG "-DDEBUG -O0 -DDEBUG_MEMORY_STATS")
-set(CMAKE_C_FLAGS_RELEASE "-O3 -DNDEBUG -flto -march=native")
+set(CMAKE_C_FLAGS_RELEASE "-O3 -DNDEBUG -flto -march=native -funroll-loops -fomit-frame-pointer")
 
 # Include directories
 include_directories(src)

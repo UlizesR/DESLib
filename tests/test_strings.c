@@ -17,10 +17,11 @@ int test_string_printing() {
   uint32_t addr = 0x100;
 
   // Write string to memory
-  for (int i = 0; i < strlen(test_string); i++) {
-    memory_write_byte(&vm.memory, addr + i, test_string[i]);
+  size_t str_len = strlen(test_string);
+  for (size_t i = 0; i < str_len; i++) {
+    memory_write_byte(&vm.memory, addr + (uint32_t)i, test_string[i]);
   }
-  memory_write_byte(&vm.memory, addr + strlen(test_string), 0); // Null terminator
+  memory_write_byte(&vm.memory, addr + (uint32_t)str_len, 0); // Null terminator
 
   // Test program: MOV R0, 0x100; SYS R0, PRINT_STR; HALT
   uint32_t program[] = {
@@ -102,20 +103,23 @@ int test_multiple_strings() {
   uint32_t addr3 = 0x120;
 
   // Write strings to memory
-  for (int i = 0; i < strlen(str1); i++) {
-    memory_write_byte(&vm.memory, addr1 + i, str1[i]);
+  size_t len1 = strlen(str1);
+  for (size_t i = 0; i < len1; i++) {
+    memory_write_byte(&vm.memory, addr1 + (uint32_t)i, str1[i]);
   }
-  memory_write_byte(&vm.memory, addr1 + strlen(str1), 0);
+  memory_write_byte(&vm.memory, addr1 + (uint32_t)len1, 0);
 
-  for (int i = 0; i < strlen(str2); i++) {
-    memory_write_byte(&vm.memory, addr2 + i, str2[i]);
+  size_t len2 = strlen(str2);
+  for (size_t i = 0; i < len2; i++) {
+    memory_write_byte(&vm.memory, addr2 + (uint32_t)i, str2[i]);
   }
-  memory_write_byte(&vm.memory, addr2 + strlen(str2), 0);
+  memory_write_byte(&vm.memory, addr2 + (uint32_t)len2, 0);
 
-  for (int i = 0; i < strlen(str3); i++) {
-    memory_write_byte(&vm.memory, addr3 + i, str3[i]);
+  size_t len3 = strlen(str3);
+  for (size_t i = 0; i < len3; i++) {
+    memory_write_byte(&vm.memory, addr3 + (uint32_t)i, str3[i]);
   }
-  memory_write_byte(&vm.memory, addr3 + strlen(str3), 0);
+  memory_write_byte(&vm.memory, addr3 + (uint32_t)len3, 0);
 
   // Test program: Print all three strings
   uint32_t program[] = {
@@ -158,10 +162,11 @@ int test_special_characters() {
   uint32_t addr = 0x100;
 
   // Write string to memory
-  for (int i = 0; i < strlen(test_string); i++) {
-    memory_write_byte(&vm.memory, addr + i, test_string[i]);
+  size_t str_len = strlen(test_string);
+  for (size_t i = 0; i < str_len; i++) {
+    memory_write_byte(&vm.memory, addr + (uint32_t)i, test_string[i]);
   }
-  memory_write_byte(&vm.memory, addr + strlen(test_string), 0);
+  memory_write_byte(&vm.memory, addr + (uint32_t)str_len, 0);
 
   // Test program: MOV R0, 0x100; SYS R0, PRINT_STR; HALT
   uint32_t program[] = {

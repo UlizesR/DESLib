@@ -62,11 +62,11 @@ uint32_t memory_get_usage(dez_memory_t *mem, uint32_t segment);
 void memory_set_protection(dez_memory_t *mem, uint32_t segment, bool readonly);
 
 // Address validation functions
-bool memory_is_valid_address_public(dez_memory_t *mem, uint32_t address);
-bool memory_is_code_segment_public(dez_memory_t *mem, uint32_t address);
-bool memory_is_data_segment_public(dez_memory_t *mem, uint32_t address);
-bool memory_is_stack_segment_public(dez_memory_t *mem, uint32_t address);
-bool memory_can_write_public(dez_memory_t *mem, uint32_t address);
+bool memory_is_valid_address(dez_memory_t *mem, uint32_t address);
+bool memory_is_code_segment(dez_memory_t *mem, uint32_t address);
+bool memory_is_data_segment(dez_memory_t *mem, uint32_t address);
+bool memory_is_stack_segment(dez_memory_t *mem, uint32_t address);
+bool memory_can_write(dez_memory_t *mem, uint32_t address);
 
 // Fast path memory access (no validation, no statistics)
 uint32_t memory_read_word_fast(dez_memory_t *mem, uint32_t address);
@@ -75,5 +75,9 @@ int memory_write_word_fast(dez_memory_t *mem, uint32_t address, uint32_t value);
 // Compiler optimization hints
 #define LIKELY(x) __builtin_expect(!!(x), 1)
 #define UNLIKELY(x) __builtin_expect(!!(x), 0)
+
+// Fast memory access macros for hot paths
+#define MEMORY_READ_FAST(mem, addr) ((mem)->memory[addr])
+#define MEMORY_WRITE_FAST(mem, addr, val) ((mem)->memory[addr] = (val))
 
 #endif // DEZ_MEMORY_H

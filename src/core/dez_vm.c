@@ -25,23 +25,41 @@ void dez_vm_init(dez_vm_t *vm) {
 
 // Load a program from a binary file
 void dez_vm_load_program(dez_vm_t *vm, const char *filename) {
+  if (!vm || !filename) {
+    printf("Error: Invalid parameters for dez_vm_load_program\n");
+    if (vm)
+      vm->cpu.state = VM_STATE_ERROR;
+    return;
+  }
+
   FILE *file = fopen(filename, "rb");
   if (!file) {
-    printf("Error: Could not open file %s\n", filename);
+    printf("Error: Could not open file '%s'\n", filename);
     vm->cpu.state = VM_STATE_ERROR;
     return;
   }
 
   // Read program size
-  fread(&vm->program_size, sizeof(uint32_t), 1, file);
+  if (fread(&vm->program_size, sizeof(uint32_t), 1, file) != 1) {
+    printf("Error: Could not read program size from '%s'\n", filename);
+    fclose(file);
+    vm->cpu.state = VM_STATE_ERROR;
+    return;
+  }
+
+  // Validate program size
+  if (vm->program_size == 0 || vm->program_size > MAX_PROGRAM_SIZE) {
+    printf("Error: Invalid program size %u (max %u)\n", vm->program_size,
+           MAX_PROGRAM_SIZE);
+    fclose(file);
+    vm->cpu.state = VM_STATE_ERROR;
+    return;
+  }
 
   // Get file size to determine how much data to load
   fseek(file, 0, SEEK_END);
   long file_size = ftell(file);
   fseek(file, sizeof(uint32_t), SEEK_SET); // Skip the size header
-
-  // Calculate how many words to load (file size minus header)
-  uint32_t words_to_load = (file_size - sizeof(uint32_t)) / sizeof(uint32_t);
 
   // Temporarily disable code protection for program loading
   memory_set_protection(&vm->memory, 0, false);
@@ -51,8 +69,19 @@ void dez_vm_load_program(dez_vm_t *vm, const char *filename) {
   // count
   for (uint32_t i = 0; i < vm->program_size; i++) {
     uint32_t instruction;
-    fread(&instruction, sizeof(uint32_t), 1, file);
-    memory_write_word(&vm->memory, i, instruction);
+    if (fread(&instruction, sizeof(uint32_t), 1, file) != 1) {
+      printf("Error: Could not read instruction %u from '%s'\n", i, filename);
+      fclose(file);
+      vm->cpu.state = VM_STATE_ERROR;
+      return;
+    }
+
+    if (memory_write_word(&vm->memory, i, instruction) != 0) {
+      printf("Error: Could not write instruction %u to memory\n", i);
+      fclose(file);
+      vm->cpu.state = VM_STATE_ERROR;
+      return;
+    }
   }
 
   // Load string data into data segment (starting at 0x100)
@@ -122,12 +151,16 @@ void dez_vm_step(dez_vm_t *vm) {
 // Run the VM until halt or error
 void dez_vm_run(dez_vm_t *vm) {
   int step_count = 0; // Reset step count for each run
-  while (vm->cpu.state == VM_STATE_RUNNING) {
+  const int MAX_STEPS =
+      vm->debug_mode ? 10000 : 100000; // Higher limit for release
+
+  while (LIKELY(vm->cpu.state == VM_STATE_RUNNING)) {
     dez_vm_step(vm);
 
     // Safety check to prevent infinite loops
-    if (++step_count > 10000) {
-      printf("Error: Too many steps, possible infinite loop\n");
+    if (UNLIKELY(++step_count > MAX_STEPS)) {
+      printf("Error: Too many steps (%d), possible infinite loop\n",
+             step_count);
       vm->cpu.state = VM_STATE_ERROR;
       break;
     }

@@ -10,6 +10,11 @@ void symbol_table_init(symbol_table_t *table) {
       0x100; // Start string storage at address 0x100 (fits in 12 bits)
   table->pass = 1;
   memset(table->symbols, 0, sizeof(table->symbols));
+
+  // Initialize hash table to empty (-1)
+  for (int i = 0; i < SYMBOL_HASH_SIZE; i++) {
+    table->hash_table[i] = -1;
+  }
 }
 
 // Add symbol to table
@@ -56,16 +61,27 @@ static uint32_t symbol_hash(const char *name) {
   while ((c = *name++)) {
     hash = ((hash << 5) + hash) + c; // hash * 33 + c
   }
-  return hash % 1024; // Use table size as modulo
+  return hash % SYMBOL_HASH_SIZE;
 }
 
-// Find symbol by name (optimized with early termination)
+// Find symbol by name (optimized with hash table)
 symbol_t *symbol_table_find(symbol_table_t *table, const char *name) {
-  // Simple linear search with early termination for small tables
-  // For larger projects, this could be replaced with a proper hash table
-  for (int i = table->count - 1; i >= 0;
-       i--) { // Search backwards (most recent first)
+  uint32_t hash = symbol_hash(name);
+  int index = table->hash_table[hash];
+
+  // If hash table has an entry, check it first
+  if (index != -1 && index < table->count) {
+    if (strcmp(table->symbols[index].name, name) == 0) {
+      return &table->symbols[index];
+    }
+  }
+
+  // Fallback to linear search (for hash collisions or if hash table not
+  // updated)
+  for (int i = table->count - 1; i >= 0; i--) {
     if (strcmp(table->symbols[i].name, name) == 0) {
+      // Update hash table for faster future lookups
+      table->hash_table[hash] = i;
       return &table->symbols[i];
     }
   }

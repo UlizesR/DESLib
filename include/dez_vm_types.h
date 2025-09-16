@@ -10,10 +10,12 @@
 #define MEMORY_SIZE_WORDS 4096
 #define MAX_MEMORY_ADDRESS 0x3FFF
 #define MAX_32BIT_VALUE 0xFFFFFFFF
+#define MAX_PROGRAM_SIZE 1024 // Maximum number of instructions
 
 #define MAX_LABEL_LENGTH 64
 #define MAX_LINE_LENGTH 256
 #define MAX_LABELS 1024
+#define SYMBOL_HASH_SIZE 256 // Hash table size for faster lookups
 
 // Register index
 typedef enum {

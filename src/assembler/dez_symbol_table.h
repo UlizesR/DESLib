@@ -1,6 +1,7 @@
 #ifndef DEZ_SYMBOL_TABLE_H
 #define DEZ_SYMBOL_TABLE_H
 
+#include "../../include/dez_vm_types.h"
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -23,12 +24,14 @@ typedef struct {
   int line;               // Line where defined
 } symbol_t;
 
-// Symbol table
+// Symbol table with hash table optimization
 typedef struct {
-  symbol_t symbols[1024]; // Array of symbols
-  int count;              // Number of symbols
-  int next_string_addr;   // Next available string address
-  int pass;               // Current pass (1 or 2)
+  symbol_t symbols[1024];           // Array of symbols
+  int count;                        // Number of symbols
+  int hash_table[SYMBOL_HASH_SIZE]; // Hash table for faster lookups (-1 =
+                                    // empty)
+  int next_string_addr;             // Next available string address
+  int pass;                         // Current pass (1 or 2)
 } symbol_table_t;
 
 // Symbol table functions

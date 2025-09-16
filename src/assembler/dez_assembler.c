@@ -97,8 +97,8 @@ bool assembler_assemble_string(assembler_t *assembler, const char *input,
         uint32_t end_addr = addr + len;
         uint32_t end_word =
             (end_addr + sizeof(uint32_t) - 1) / sizeof(uint32_t);
-        if (end_word > assembler->output_size) {
-          assembler->output_size = end_word;
+        if (end_word > (uint32_t)assembler->output_size) {
+          assembler->output_size = (int)end_word;
         }
 
         if (assembler->verbose) {
@@ -192,14 +192,13 @@ bool write_binary_file_with_strings(const char *filename, const uint32_t *data,
     return false;
   }
 
-  // Calculate total size including string data
-  int total_words = count;
+  // Calculate total size including string data (for future use)
+  (void)count; // Suppress unused parameter warning
   for (int i = 0; i < symbol_table->count; i++) {
     symbol_t *sym = &symbol_table->symbols[i];
     if (sym->type == SYMBOL_STRING && sym->defined) {
-      int len = strlen(sym->string_value) + 1; // +1 for null terminator
-      int words = (len + sizeof(uint32_t) - 1) / sizeof(uint32_t);
-      total_words += words;
+      // String data will be written below
+      (void)sym; // Suppress unused variable warning
     }
   }
 
@@ -214,12 +213,12 @@ bool write_binary_file_with_strings(const char *filename, const uint32_t *data,
     symbol_t *sym = &symbol_table->symbols[i];
     if (sym->type == SYMBOL_STRING && sym->defined) {
       const char *str = sym->string_value;
-      int len = strlen(str) + 1; // +1 for null terminator
-      int words = (len + sizeof(uint32_t) - 1) / sizeof(uint32_t);
+      int len = (int)strlen(str) + 1; // +1 for null terminator
+      int words = (len + (int)sizeof(uint32_t) - 1) / (int)sizeof(uint32_t);
 
       // Write string data padded to word boundary
       fwrite(str, 1, len, file);
-      for (int j = len; j < words * sizeof(uint32_t); j++) {
+      for (int j = len; j < words * (int)sizeof(uint32_t); j++) {
         fputc(0, file);
       }
     }

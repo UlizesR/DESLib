@@ -4,6 +4,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+// Compiler optimization hints
+#define LIKELY(x) __builtin_expect(!!(x), 1)
+#define UNLIKELY(x) __builtin_expect(!!(x), 0)
+
 // Initialize lexer
 void lexer_init(lexer_t *lexer, const char *input) {
   lexer->input = input;
@@ -56,10 +60,11 @@ bool lexer_is_whitespace(char c) { return c == ' ' || c == '\t' || c == '\r'; }
 
 // Skip whitespace and comments
 void lexer_skip_whitespace(lexer_t *lexer) {
+  // Optimized: bulk skip whitespace characters
   while (lexer->input[lexer->position] != '\0') {
     char c = lexer->input[lexer->position];
 
-    if (lexer_is_whitespace(c)) {
+    if (LIKELY(lexer_is_whitespace(c))) {
       lexer->position++;
       lexer->column++;
     } else if (c == ';') {

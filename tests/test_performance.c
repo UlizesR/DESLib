@@ -170,7 +170,8 @@ int test_jump_performance() {
 
   // Add many jump operations (no loops)
   for (int i = 0; i < 100; i++) {
-    program[program_size++] = 0x08000000 | (program_size + 2);  // JMP to next instruction
+    int current_size = program_size;
+    program[program_size++] = 0x08000000 | (current_size + 2);  // JMP to next instruction
     program[program_size++] = 0x04201000; // ADD R2, R0, R1
     program[program_size++] = 0x05302000; // SUB R3, R2, R0
   }
