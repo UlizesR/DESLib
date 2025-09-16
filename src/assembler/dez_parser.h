@@ -43,6 +43,7 @@ bool parser_parse_constant(parser_t *parser);
 // Instruction encoding
 uint32_t parser_encode_instruction(const parsed_instruction_t *inst);
 uint32_t parser_encode_mov(uint8_t reg, uint32_t immediate);
+uint32_t parser_encode_load(uint8_t reg, uint32_t address);
 uint32_t parser_encode_store(uint8_t reg, uint32_t address);
 uint32_t parser_encode_arithmetic(dez_instruction_type_t type, uint8_t reg1,
                                   uint8_t reg2, uint8_t reg3);
@@ -50,6 +51,8 @@ uint32_t parser_encode_jump(dez_instruction_type_t type, uint8_t reg,
                             uint32_t address);
 uint32_t parser_encode_sys(uint8_t reg, uint32_t syscall);
 uint32_t parser_encode_single(dez_instruction_type_t type);
+uint32_t parser_encode_single_register(dez_instruction_type_t type,
+                                       uint8_t reg);
 
 // Operand resolution
 bool parser_resolve_operand(parser_t *parser, dez_operand_t *operand);

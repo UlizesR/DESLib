@@ -35,6 +35,9 @@ foreach(test_file ${TEST_SOURCES})
     set_target_properties(${test_name} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 endforeach()
 
+# Debug: Print found test sources
+message(STATUS "Found test sources: ${TEST_SOURCES}")
+
 # Tool executables
 foreach(tool_file ${TOOL_SOURCES})
     get_filename_component(tool_name ${tool_file} NAME_WE)

@@ -238,6 +238,9 @@ bool parser_parse_instruction(parser_t *parser, parsed_instruction_t *inst) {
   if (strcmp(token.value, "MOV") == 0) {
     inst->type = INST_MOV;
     inst->num_operands = 2;
+  } else if (strcmp(token.value, "LOAD") == 0) {
+    inst->type = INST_LOAD;
+    inst->num_operands = 2;
   } else if (strcmp(token.value, "STORE") == 0) {
     inst->type = INST_STORE;
     inst->num_operands = 2;
@@ -262,12 +265,54 @@ bool parser_parse_instruction(parser_t *parser, parsed_instruction_t *inst) {
   } else if (strcmp(token.value, "JNZ") == 0) {
     inst->type = INST_JNZ;
     inst->num_operands = 1;
+  } else if (strcmp(token.value, "JL") == 0) {
+    inst->type = INST_JL;
+    inst->num_operands = 1;
+  } else if (strcmp(token.value, "JG") == 0) {
+    inst->type = INST_JG;
+    inst->num_operands = 1;
+  } else if (strcmp(token.value, "JLE") == 0) {
+    inst->type = INST_JLE;
+    inst->num_operands = 1;
+  } else if (strcmp(token.value, "JGE") == 0) {
+    inst->type = INST_JGE;
+    inst->num_operands = 1;
+  } else if (strcmp(token.value, "PUSH") == 0) {
+    inst->type = INST_PUSH;
+    inst->num_operands = 1;
+  } else if (strcmp(token.value, "POP") == 0) {
+    inst->type = INST_POP;
+    inst->num_operands = 1;
   } else if (strcmp(token.value, "CMP") == 0) {
     inst->type = INST_CMP;
     inst->num_operands = 2;
   } else if (strcmp(token.value, "SYS") == 0) {
     inst->type = INST_SYS;
     inst->num_operands = 2;
+  } else if (strcmp(token.value, "AND") == 0) {
+    inst->type = INST_AND;
+    inst->num_operands = 3;
+  } else if (strcmp(token.value, "OR") == 0) {
+    inst->type = INST_OR;
+    inst->num_operands = 3;
+  } else if (strcmp(token.value, "XOR") == 0) {
+    inst->type = INST_XOR;
+    inst->num_operands = 3;
+  } else if (strcmp(token.value, "NOT") == 0) {
+    inst->type = INST_NOT;
+    inst->num_operands = 2;
+  } else if (strcmp(token.value, "SHL") == 0) {
+    inst->type = INST_SHL;
+    inst->num_operands = 3;
+  } else if (strcmp(token.value, "SHR") == 0) {
+    inst->type = INST_SHR;
+    inst->num_operands = 3;
+  } else if (strcmp(token.value, "CALL") == 0) {
+    inst->type = INST_CALL;
+    inst->num_operands = 1;
+  } else if (strcmp(token.value, "RET") == 0) {
+    inst->type = INST_RET;
+    inst->num_operands = 0;
   } else if (strcmp(token.value, "HALT") == 0) {
     inst->type = INST_HALT;
     inst->num_operands = 0;
@@ -435,6 +480,17 @@ uint32_t parser_encode_instruction(const parsed_instruction_t *inst) {
     } else {
       return parser_encode_mov(inst->operands[0].reg, inst->operands[1].value);
     }
+  case INST_LOAD:
+    if (inst->operands[1].type == OP_LABEL) {
+      // Resolve label to address
+      symbol_t *sym =
+          symbol_table_find(inst->symbol_table, inst->operands[1].label);
+      uint32_t label_addr = sym ? sym->address : 0;
+      return parser_encode_load(inst->operands[0].reg, label_addr);
+    } else {
+      return parser_encode_load(inst->operands[0].reg,
+                                inst->operands[1].address);
+    }
   case INST_STORE:
     return parser_encode_store(inst->operands[0].reg,
                                inst->operands[1].address);
@@ -467,6 +523,10 @@ uint32_t parser_encode_instruction(const parsed_instruction_t *inst) {
     }
   case INST_JZ:
   case INST_JNZ:
+  case INST_JL:
+  case INST_JG:
+  case INST_JLE:
+  case INST_JGE:
     if (inst->operands[0].type == OP_LABEL) {
       // Resolve label to address
       symbol_t *sym =
@@ -488,6 +548,31 @@ uint32_t parser_encode_instruction(const parsed_instruction_t *inst) {
     }
   case INST_SYS:
     return parser_encode_sys(inst->operands[0].reg, inst->operands[1].value);
+  case INST_PUSH:
+  case INST_POP:
+    return parser_encode_single_register(inst->type, inst->operands[0].reg);
+  case INST_AND:
+  case INST_OR:
+  case INST_XOR:
+  case INST_SHL:
+  case INST_SHR:
+    return parser_encode_arithmetic(inst->type, inst->operands[0].reg,
+                                    inst->operands[1].reg,
+                                    inst->operands[2].reg);
+  case INST_NOT:
+    return parser_encode_arithmetic(inst->type, inst->operands[0].reg,
+                                    inst->operands[1].reg, 0);
+  case INST_CALL:
+    if (inst->operands[0].type == OP_LABEL) {
+      // Resolve label to address
+      symbol_t *sym =
+          symbol_table_find(inst->symbol_table, inst->operands[0].label);
+      uint32_t label_addr = sym ? sym->address : 0;
+      return parser_encode_jump(inst->type, 0, label_addr);
+    } else {
+      return parser_encode_jump(inst->type, 0, inst->operands[0].value);
+    }
+  case INST_RET:
   case INST_HALT:
   case INST_NOP:
     return parser_encode_single(inst->type);
@@ -499,6 +584,11 @@ uint32_t parser_encode_instruction(const parsed_instruction_t *inst) {
 // Encode MOV instruction
 uint32_t parser_encode_mov(uint8_t reg, uint32_t immediate) {
   return (INST_MOV << 24) | (reg << 20) | (immediate & 0x0FFF);
+}
+
+// Encode LOAD instruction
+uint32_t parser_encode_load(uint8_t reg, uint32_t address) {
+  return (INST_LOAD << 24) | (reg << 20) | (address & 0x0FFF);
 }
 
 // Encode STORE instruction
@@ -526,6 +616,12 @@ uint32_t parser_encode_sys(uint8_t reg, uint32_t syscall) {
 // Encode single instruction
 uint32_t parser_encode_single(dez_instruction_type_t type) {
   return type << 24;
+}
+
+// Encode single register instruction
+uint32_t parser_encode_single_register(dez_instruction_type_t type,
+                                       uint8_t reg) {
+  return (type << 24) | (reg << 20);
 }
 
 // Error handling

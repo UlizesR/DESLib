@@ -55,17 +55,27 @@ typedef enum {
   INST_SUB = 0x05,   // subtraction instruction
   INST_MUL = 0x06,   // multiplication instruction
   INST_DIV = 0x07,   // division instruction
-  INST_LOAD = 0x01,  // load immediate instruction
+  INST_LOAD = 0x01,  // load from memory instruction
   INST_STORE = 0x03, // store instruction
   INST_JMP = 0x08,   // jump instruction
   INST_JZ = 0x09,    // jump if zero instruction
   INST_JNZ = 0x0A,   // jump if not zero instruction
+  INST_JL = 0x19,    // jump if less instruction
+  INST_JG = 0x1A,    // jump if greater instruction
+  INST_JLE = 0x1B,   // jump if less or equal instruction
+  INST_JGE = 0x1C,   // jump if greater or equal instruction
   INST_PUSH = 0x0B,  // push to stack instruction
   INST_POP = 0x0C,   // pop from stack instruction
   INST_SYS = 0x0D,   // syscall instruction
   INST_CMP = 0x0E,   // compare instruction
   INST_CALL = 0x0F,  // call label instruction
   INST_RET = 0x11,   // return instruction
+  INST_AND = 0x13,   // bitwise AND instruction
+  INST_OR = 0x14,    // bitwise OR instruction
+  INST_XOR = 0x15,   // bitwise XOR instruction
+  INST_NOT = 0x16,   // bitwise NOT instruction
+  INST_SHL = 0x17,   // shift left instruction
+  INST_SHR = 0x18,   // shift right instruction
   INST_HALT = 0x00,  // halt instruction
   INST_NOP = 0x12,   // no operation
   INST_UNKNOWN = 0xFF
@@ -105,5 +115,13 @@ typedef enum {
   VM_STATE_ERROR = 2,
   VM_STATE_DEBUG = 3
 } dez_vm_state_t;
+
+// CPU flags for conditional jumps
+typedef enum {
+  FLAG_ZERO = 0x01,    // Zero flag (set when result is zero)
+  FLAG_LESS = 0x02,    // Less flag (set when first operand < second)
+  FLAG_GREATER = 0x04, // Greater flag (set when first operand > second)
+  FLAG_EQUAL = 0x08    // Equal flag (set when operands are equal)
+} dez_cpu_flags_t;
 
 #endif // DEZ_VM_TYPES_H

@@ -19,6 +19,17 @@ void execute_mov(dez_vm_t *vm, uint32_t instruction) {
 }
 
 /**
+ * Execute LOAD instruction: Load value from memory to register
+ * Format: (INST_LOAD << 24) | (reg << 20) | (address & 0x0FFF)
+ * Example: LOAD R0, 256 -> 0x01000100
+ */
+void execute_load(dez_vm_t *vm, uint32_t instruction) {
+  uint32_t address = instruction & 0x0FFF;
+  uint8_t reg = instruction >> 20 & 0xF;
+  vm->cpu.regs[reg] = memory_read_word(&vm->memory, address);
+}
+
+/**
  * Execute STORE instruction: Store register value to memory
  * Format: (INST_STORE << 24) | (reg << 20) | (address & 0x0FFF)
  * Example: STORE R0, 256 -> 0x11000100
@@ -91,14 +102,14 @@ void execute_jmp(dez_vm_t *vm, uint32_t instruction) {
 }
 
 void execute_jz(dez_vm_t *vm, uint32_t instruction) {
-  if (vm->cpu.flags == 1) {
+  if (vm->cpu.flags & FLAG_ZERO) {
     vm->cpu.pc = instruction & 0x0FFF;
   }
   // If condition not met, let VM handle PC increment
 }
 
 void execute_jnz(dez_vm_t *vm, uint32_t instruction) {
-  if (vm->cpu.flags == 0) {
+  if (!(vm->cpu.flags & FLAG_ZERO)) {
     vm->cpu.pc = instruction & 0x0FFF;
   }
   // If condition not met, let VM handle PC increment
@@ -108,14 +119,28 @@ void execute_cmp(dez_vm_t *vm, uint32_t instruction) {
   uint8_t reg1 = instruction >> 20 & 0xF;
   uint8_t reg2 = instruction >> 16 & 0xF;
   uint32_t immediate = instruction & 0x0FFF;
+  uint32_t val1 = vm->cpu.regs[reg1];
+  uint32_t val2;
 
   // Check if this is register-to-register comparison (reg2 != 0)
   if (reg2 != 0) {
     // Register-to-register comparison
-    vm->cpu.flags = (vm->cpu.regs[reg1] == vm->cpu.regs[reg2]) ? 1 : 0;
+    val2 = vm->cpu.regs[reg2];
   } else {
     // Register-to-immediate comparison
-    vm->cpu.flags = (vm->cpu.regs[reg1] == immediate) ? 1 : 0;
+    val2 = immediate;
+  }
+
+  // Clear all flags first
+  vm->cpu.flags = 0;
+
+  // Set flags based on comparison
+  if (val1 == val2) {
+    vm->cpu.flags |= FLAG_EQUAL | FLAG_ZERO;
+  } else if (val1 < val2) {
+    vm->cpu.flags |= FLAG_LESS;
+  } else {
+    vm->cpu.flags |= FLAG_GREATER;
   }
 }
 
@@ -192,6 +217,211 @@ void execute_nop(dez_vm_t *vm, uint32_t instruction) {
   (void)instruction; // Suppress unused parameter warning
 }
 
+/**
+ * Execute AND instruction: Bitwise AND operation
+ * Format: (INST_AND << 24) | (reg1 << 20) | (reg2 << 16) | (reg3 << 12)
+ * Example: AND R1, R2, R3 -> R1 = R2 & R3
+ */
+void execute_and(dez_vm_t *vm, uint32_t instruction) {
+  uint8_t reg1 = instruction >> 20 & 0xF;
+  uint8_t reg2 = instruction >> 16 & 0xF;
+  uint8_t reg3 = instruction >> 12 & 0xF;
+  vm->cpu.regs[reg1] = vm->cpu.regs[reg2] & vm->cpu.regs[reg3];
+}
+
+/**
+ * Execute OR instruction: Bitwise OR operation
+ * Format: (INST_OR << 24) | (reg1 << 20) | (reg2 << 16) | (reg3 << 12)
+ * Example: OR R1, R2, R3 -> R1 = R2 | R3
+ */
+void execute_or(dez_vm_t *vm, uint32_t instruction) {
+  uint8_t reg1 = instruction >> 20 & 0xF;
+  uint8_t reg2 = instruction >> 16 & 0xF;
+  uint8_t reg3 = instruction >> 12 & 0xF;
+  vm->cpu.regs[reg1] = vm->cpu.regs[reg2] | vm->cpu.regs[reg3];
+}
+
+/**
+ * Execute XOR instruction: Bitwise XOR operation
+ * Format: (INST_XOR << 24) | (reg1 << 20) | (reg2 << 16) | (reg3 << 12)
+ * Example: XOR R1, R2, R3 -> R1 = R2 ^ R3
+ */
+void execute_xor(dez_vm_t *vm, uint32_t instruction) {
+  uint8_t reg1 = instruction >> 20 & 0xF;
+  uint8_t reg2 = instruction >> 16 & 0xF;
+  uint8_t reg3 = instruction >> 12 & 0xF;
+  vm->cpu.regs[reg1] = vm->cpu.regs[reg2] ^ vm->cpu.regs[reg3];
+}
+
+/**
+ * Execute NOT instruction: Bitwise NOT operation
+ * Format: (INST_NOT << 24) | (reg1 << 20) | (reg2 << 16)
+ * Example: NOT R1, R2 -> R1 = ~R2
+ */
+void execute_not(dez_vm_t *vm, uint32_t instruction) {
+  uint8_t reg1 = instruction >> 20 & 0xF;
+  uint8_t reg2 = instruction >> 16 & 0xF;
+  vm->cpu.regs[reg1] = ~vm->cpu.regs[reg2];
+}
+
+/**
+ * Execute SHL instruction: Shift left operation
+ * Format: (INST_SHL << 24) | (reg1 << 20) | (reg2 << 16) | (reg3 << 12)
+ * Example: SHL R1, R2, R3 -> R1 = R2 << R3
+ */
+void execute_shl(dez_vm_t *vm, uint32_t instruction) {
+  uint8_t reg1 = instruction >> 20 & 0xF;
+  uint8_t reg2 = instruction >> 16 & 0xF;
+  uint8_t reg3 = instruction >> 12 & 0xF;
+  vm->cpu.regs[reg1] = vm->cpu.regs[reg2] << vm->cpu.regs[reg3];
+}
+
+/**
+ * Execute SHR instruction: Shift right operation
+ * Format: (INST_SHR << 24) | (reg1 << 20) | (reg2 << 16) | (reg3 << 12)
+ * Example: SHR R1, R2, R3 -> R1 = R2 >> R3
+ */
+void execute_shr(dez_vm_t *vm, uint32_t instruction) {
+  uint8_t reg1 = instruction >> 20 & 0xF;
+  uint8_t reg2 = instruction >> 16 & 0xF;
+  uint8_t reg3 = instruction >> 12 & 0xF;
+  vm->cpu.regs[reg1] = vm->cpu.regs[reg2] >> vm->cpu.regs[reg3];
+}
+
+/**
+ * Execute PUSH instruction: Push register value to stack
+ * Format: (INST_PUSH << 24) | (reg << 20)
+ * Example: PUSH R0 -> Push R0 to stack
+ */
+void execute_push(dez_vm_t *vm, uint32_t instruction) {
+  uint8_t reg = instruction >> 20 & 0xF;
+
+  // Check stack bounds
+  if (vm->cpu.sp < STACK_START) {
+    printf("Error: Stack overflow\n");
+    vm->cpu.state = VM_STATE_ERROR;
+    return;
+  }
+
+  // Push value to stack
+  memory_write_word(&vm->memory, vm->cpu.sp, vm->cpu.regs[reg]);
+  vm->cpu.sp--;
+}
+
+/**
+ * Execute POP instruction: Pop value from stack to register
+ * Format: (INST_POP << 24) | (reg << 20)
+ * Example: POP R0 -> Pop from stack to R0
+ */
+void execute_pop(dez_vm_t *vm, uint32_t instruction) {
+  uint8_t reg = instruction >> 20 & 0xF;
+
+  // Check stack bounds
+  if (vm->cpu.sp >= STACK_END) {
+    printf("Error: Stack underflow\n");
+    vm->cpu.state = VM_STATE_ERROR;
+    return;
+  }
+
+  // Pop value from stack
+  vm->cpu.sp++;
+  vm->cpu.regs[reg] = memory_read_word(&vm->memory, vm->cpu.sp);
+}
+
+/**
+ * Execute CALL instruction: Call a function (push return address and jump)
+ * Format: (INST_CALL << 24) | (address & 0x0FFF)
+ * Example: CALL function -> Push PC+1 and jump to function
+ */
+void execute_call(dez_vm_t *vm, uint32_t instruction) {
+  uint32_t target_address = instruction & 0x0FFF;
+
+  // Check stack bounds
+  if (vm->cpu.sp < STACK_START) {
+    printf("Error: Stack overflow during call\n");
+    vm->cpu.state = VM_STATE_ERROR;
+    return;
+  }
+
+  // Push return address (current PC + 1) to stack
+  memory_write_word(&vm->memory, vm->cpu.sp, vm->cpu.pc + 1);
+  vm->cpu.sp--;
+
+  // Jump to target address
+  vm->cpu.pc = target_address;
+}
+
+/**
+ * Execute RET instruction: Return from function (pop return address and jump)
+ * Format: (INST_RET << 24)
+ * Example: RET -> Pop return address and jump back
+ */
+void execute_ret(dez_vm_t *vm, uint32_t instruction) {
+  (void)instruction; // Suppress unused parameter warning
+
+  // Check stack bounds
+  if (vm->cpu.sp >= STACK_END) {
+    printf("Error: Stack underflow during return\n");
+    vm->cpu.state = VM_STATE_ERROR;
+    return;
+  }
+
+  // Pop return address from stack
+  vm->cpu.sp++;
+  uint32_t return_address = memory_read_word(&vm->memory, vm->cpu.sp);
+
+  // Jump back to return address
+  vm->cpu.pc = return_address;
+}
+
+/**
+ * Execute JL instruction: Jump if less
+ * Format: (INST_JL << 24) | (address & 0x0FFF)
+ * Example: JL target -> Jump if first operand < second operand
+ */
+void execute_jl(dez_vm_t *vm, uint32_t instruction) {
+  if (vm->cpu.flags & FLAG_LESS) {
+    vm->cpu.pc = instruction & 0x0FFF;
+  }
+  // If condition not met, let VM handle PC increment
+}
+
+/**
+ * Execute JG instruction: Jump if greater
+ * Format: (INST_JG << 24) | (address & 0x0FFF)
+ * Example: JG target -> Jump if first operand > second operand
+ */
+void execute_jg(dez_vm_t *vm, uint32_t instruction) {
+  if (vm->cpu.flags & FLAG_GREATER) {
+    vm->cpu.pc = instruction & 0x0FFF;
+  }
+  // If condition not met, let VM handle PC increment
+}
+
+/**
+ * Execute JLE instruction: Jump if less or equal
+ * Format: (INST_JLE << 24) | (address & 0x0FFF)
+ * Example: JLE target -> Jump if first operand <= second operand
+ */
+void execute_jle(dez_vm_t *vm, uint32_t instruction) {
+  if (vm->cpu.flags & (FLAG_LESS | FLAG_EQUAL)) {
+    vm->cpu.pc = instruction & 0x0FFF;
+  }
+  // If condition not met, let VM handle PC increment
+}
+
+/**
+ * Execute JGE instruction: Jump if greater or equal
+ * Format: (INST_JGE << 24) | (address & 0x0FFF)
+ * Example: JGE target -> Jump if first operand >= second operand
+ */
+void execute_jge(dez_vm_t *vm, uint32_t instruction) {
+  if (vm->cpu.flags & (FLAG_GREATER | FLAG_EQUAL)) {
+    vm->cpu.pc = instruction & 0x0FFF;
+  }
+  // If condition not met, let VM handle PC increment
+}
+
 void execute_unknown(dez_vm_t *vm, uint32_t instruction) {
   printf("Error: Unknown instruction 0x%02X at PC %04X\n", instruction >> 24,
          vm->cpu.pc);
@@ -201,6 +431,7 @@ void execute_unknown(dez_vm_t *vm, uint32_t instruction) {
 // Instruction table - ordered by frequency for better branch prediction
 static const instruction_info_t instruction_table[256] = {
     [INST_MOV] = {execute_mov, 1, false, false, "MOV"},
+    [INST_LOAD] = {execute_load, 1, true, false, "LOAD"},
     [INST_ADD] = {execute_add, 1, false, false, "ADD"},
     [INST_STORE] = {execute_store, 1, true, false, "STORE"},
     [INST_SUB] = {execute_sub, 1, false, false, "SUB"},
@@ -209,8 +440,22 @@ static const instruction_info_t instruction_table[256] = {
     [INST_JMP] = {execute_jmp, 0, false, false, "JMP"},
     [INST_JZ] = {execute_jz, 1, false, false, "JZ"},
     [INST_JNZ] = {execute_jnz, 1, false, false, "JNZ"},
+    [INST_JL] = {execute_jl, 1, false, false, "JL"},
+    [INST_JG] = {execute_jg, 1, false, false, "JG"},
+    [INST_JLE] = {execute_jle, 1, false, false, "JLE"},
+    [INST_JGE] = {execute_jge, 1, false, false, "JGE"},
+    [INST_PUSH] = {execute_push, 1, false, false, "PUSH"},
+    [INST_POP] = {execute_pop, 1, false, false, "POP"},
     [INST_CMP] = {execute_cmp, 1, false, false, "CMP"},
     [INST_SYS] = {execute_sys, 1, false, false, "SYS"},
+    [INST_AND] = {execute_and, 1, false, false, "AND"},
+    [INST_OR] = {execute_or, 1, false, false, "OR"},
+    [INST_XOR] = {execute_xor, 1, false, false, "XOR"},
+    [INST_NOT] = {execute_not, 1, false, false, "NOT"},
+    [INST_SHL] = {execute_shl, 1, false, false, "SHL"},
+    [INST_SHR] = {execute_shr, 1, false, false, "SHR"},
+    [INST_CALL] = {execute_call, 0, false, false, "CALL"},
+    [INST_RET] = {execute_ret, 0, false, false, "RET"},
     [INST_HALT] = {execute_halt, 0, false, false, "HALT"},
     [INST_NOP] = {execute_nop, 1, false, false, "NOP"},
 };
