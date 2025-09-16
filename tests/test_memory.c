@@ -222,8 +222,7 @@ int test_memory_performance() {
   clock_t end = clock();
   double time_taken = ((double)(end - start)) / CLOCKS_PER_SEC;
 
-  printf("  Performed %d memory operations in %.6f seconds\n", num_ops * 2,
-         time_taken);
+  printf("  Performed %d memory operations in %.6f seconds\n", num_ops * 2, time_taken);
   printf("  Operations per second: %.0f\n", (num_ops * 2) / time_taken);
 
   printf("✅ Memory performance test passed\n");

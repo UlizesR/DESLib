@@ -171,10 +171,10 @@ bool parser_parse_instruction(parser_t *parser, parsed_instruction_t *inst) {
     inst->num_operands = 1;
   } else if (strcmp(token.value, "JZ") == 0) {
     inst->type = INST_JZ;
-    inst->num_operands = 2;
+    inst->num_operands = 1;
   } else if (strcmp(token.value, "JNZ") == 0) {
     inst->type = INST_JNZ;
-    inst->num_operands = 2;
+    inst->num_operands = 1;
   } else if (strcmp(token.value, "CMP") == 0) {
     inst->type = INST_CMP;
     inst->num_operands = 2;
@@ -356,8 +356,7 @@ uint32_t parser_encode_instruction(const parsed_instruction_t *inst) {
     return parser_encode_jump(inst->type, 0, inst->operands[0].value);
   case INST_JZ:
   case INST_JNZ:
-    return parser_encode_jump(inst->type, inst->operands[0].reg,
-                              inst->operands[1].value);
+    return parser_encode_jump(inst->type, 0, inst->operands[0].value);
   case INST_CMP:
     return parser_encode_arithmetic(inst->type, inst->operands[0].reg,
                                     inst->operands[1].reg, 0);

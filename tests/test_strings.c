@@ -20,8 +20,7 @@ int test_string_printing() {
   for (int i = 0; i < strlen(test_string); i++) {
     memory_write_byte(&vm.memory, addr + i, test_string[i]);
   }
-  memory_write_byte(&vm.memory, addr + strlen(test_string),
-                    0); // Null terminator
+  memory_write_byte(&vm.memory, addr + strlen(test_string), 0); // Null terminator
 
   // Test program: MOV R0, 0x100; SYS R0, PRINT_STR; HALT
   uint32_t program[] = {
@@ -155,8 +154,7 @@ int test_special_characters() {
   memory_set_protection(&vm.memory, 0, false);
 
   // Store string with various escape sequences
-  const char *test_string =
-      "Line1\\nLine2\\tTab\\rCarriage\\\"Quote\\\\Backslash";
+  const char *test_string = "Line1\\nLine2\\tTab\\rCarriage\\\"Quote\\\\Backslash";
   uint32_t addr = 0x100;
 
   // Write string to memory
@@ -178,9 +176,7 @@ int test_special_characters() {
   vm.program_size = 3;
   memory_set_protection(&vm.memory, 0, true);
 
-  printf(
-      "Expected output: Line1\\nLine2\\tTab\\rCarriage\\\"Quote\\\\Backslash "
-      "(with actual escapes)\n");
+  printf("Expected output: Line1\\nLine2\\tTab\\rCarriage\\\"Quote\\\\Backslash (with actual escapes)\n");
   printf("Actual output: ");
   dez_vm_run(&vm);
   printf("\n");

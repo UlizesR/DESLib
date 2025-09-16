@@ -54,7 +54,7 @@ target_link_libraries(dez_vm dez_vm_core)
 set_target_properties(dez_vm PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 # Installation
-install(TARGETS dez_vm asm disasm_tool test_core test_strings test_memory test_performance
+install(TARGETS dez_vm asm disasm_tool test_core test_strings test_memory test_performance test_assembly
     RUNTIME DESTINATION bin
 )
 
@@ -72,3 +72,4 @@ add_test(NAME test_core COMMAND test_core)
 add_test(NAME test_strings COMMAND test_strings)
 add_test(NAME test_memory COMMAND test_memory)
 add_test(NAME test_performance COMMAND test_performance)
+add_test(NAME test_assembly COMMAND test_assembly)

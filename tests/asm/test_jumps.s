@@ -1,0 +1,5 @@
+MOV R0, 1
+JMP 3
+MOV R1, 2
+MOV R2, 3
+HALT

@@ -45,8 +45,7 @@ int test_basic_performance() {
 
   assert(vm.cpu.state == VM_STATE_HALTED);
 
-  printf("  Executed %d instructions in %.6f seconds\n", instructions,
-         time_taken);
+  printf("  Executed %d instructions in %.6f seconds\n", instructions, time_taken);
   printf("  Instructions per second: %.0f\n", instructions / time_taken);
 
   printf("✅ Basic performance test passed\n");
@@ -96,8 +95,7 @@ int test_arithmetic_performance() {
 
   assert(vm.cpu.state == VM_STATE_HALTED);
 
-  printf("  Executed %d arithmetic instructions in %.6f seconds\n",
-         instructions, time_taken);
+  printf("  Executed %d arithmetic instructions in %.6f seconds\n", instructions, time_taken);
   printf("  Instructions per second: %.0f\n", instructions / time_taken);
 
   printf("✅ Arithmetic performance test passed\n");
@@ -146,8 +144,7 @@ int test_memory_performance() {
 
   assert(vm.cpu.state == VM_STATE_HALTED);
 
-  printf("  Executed %d memory instructions in %.6f seconds\n", instructions,
-         time_taken);
+  printf("  Executed %d memory instructions in %.6f seconds\n", instructions, time_taken);
   printf("  Instructions per second: %.0f\n", instructions / time_taken);
 
   printf("✅ Memory performance test passed\n");
@@ -173,8 +170,7 @@ int test_jump_performance() {
 
   // Add many jump operations (no loops)
   for (int i = 0; i < 100; i++) {
-    program[program_size++] =
-        0x08000000 | (program_size + 2);  // JMP to next instruction
+    program[program_size++] = 0x08000000 | (program_size + 2);  // JMP to next instruction
     program[program_size++] = 0x04201000; // ADD R2, R0, R1
     program[program_size++] = 0x05302000; // SUB R3, R2, R0
   }
