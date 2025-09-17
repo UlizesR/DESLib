@@ -15,7 +15,7 @@ int main(int argc, char *argv[]) {
   // Load the program
   dez_vm_load_program(&vm, argv[1]);
 
-  if (vm.cpu.state == VM_STATE_ERROR) {
+  if (vm.cpu.state == DEZ_VM_STATE_ERROR) {
     printf("Failed to load program: %s\n", argv[1]);
     return 1;
   }

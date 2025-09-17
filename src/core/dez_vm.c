@@ -10,10 +10,10 @@ void dez_vm_init(dez_vm_t *vm) {
   memset(vm->cpu.regs, 0, sizeof(vm->cpu.regs));
 
   // Initialize CPU state
-  vm->cpu.pc = 0;                     // Program counter starts at 0
-  vm->cpu.sp = MEMORY_SIZE_WORDS - 1; // Stack pointer at top of memory
-  vm->cpu.flags = 0;                  // Clear all flags
-  vm->cpu.state = VM_STATE_RUNNING;
+  vm->cpu.pc = 0;                         // Program counter starts at 0
+  vm->cpu.sp = DEZ_MEMORY_SIZE_WORDS - 1; // Stack pointer at top of memory
+  vm->cpu.flags = 0;                      // Clear all flags
+  vm->cpu.state = DEZ_VM_STATE_RUNNING;
 
   // Initialize memory system
   memory_init(&vm->memory);
@@ -28,14 +28,14 @@ void dez_vm_load_program(dez_vm_t *vm, const char *filename) {
   if (!vm || !filename) {
     printf("Error: Invalid parameters for dez_vm_load_program\n");
     if (vm)
-      vm->cpu.state = VM_STATE_ERROR;
+      vm->cpu.state = DEZ_VM_STATE_ERROR;
     return;
   }
 
   FILE *file = fopen(filename, "rb");
   if (!file) {
     printf("Error: Could not open file '%s'\n", filename);
-    vm->cpu.state = VM_STATE_ERROR;
+    vm->cpu.state = DEZ_VM_STATE_ERROR;
     return;
   }
 
@@ -43,16 +43,15 @@ void dez_vm_load_program(dez_vm_t *vm, const char *filename) {
   if (fread(&vm->program_size, sizeof(uint32_t), 1, file) != 1) {
     printf("Error: Could not read program size from '%s'\n", filename);
     fclose(file);
-    vm->cpu.state = VM_STATE_ERROR;
+    vm->cpu.state = DEZ_VM_STATE_ERROR;
     return;
   }
 
   // Validate program size
-  if (vm->program_size == 0 || vm->program_size > MAX_PROGRAM_SIZE) {
-    printf("Error: Invalid program size %u (max %u)\n", vm->program_size,
-           MAX_PROGRAM_SIZE);
+  if (vm->program_size == 0 || vm->program_size > DEZ_MAX_PROGRAM_SIZE) {
+    printf("Error: Invalid program size %u (max %u)\n", vm->program_size, DEZ_MAX_PROGRAM_SIZE);
     fclose(file);
-    vm->cpu.state = VM_STATE_ERROR;
+    vm->cpu.state = DEZ_VM_STATE_ERROR;
     return;
   }
 
@@ -72,14 +71,14 @@ void dez_vm_load_program(dez_vm_t *vm, const char *filename) {
     if (fread(&instruction, sizeof(uint32_t), 1, file) != 1) {
       printf("Error: Could not read instruction %u from '%s'\n", i, filename);
       fclose(file);
-      vm->cpu.state = VM_STATE_ERROR;
+      vm->cpu.state = DEZ_VM_STATE_ERROR;
       return;
     }
 
     if (memory_write_word(&vm->memory, i, instruction) != 0) {
       printf("Error: Could not write instruction %u to memory\n", i);
       fclose(file);
-      vm->cpu.state = VM_STATE_ERROR;
+      vm->cpu.state = DEZ_VM_STATE_ERROR;
       return;
     }
   }
@@ -99,8 +98,7 @@ void dez_vm_load_program(dez_vm_t *vm, const char *filename) {
     // Read string data byte by byte and write to VM memory
     int c;
     uint32_t current_addr = 0x100; // Data segment start
-    while ((c = fgetc(file)) != EOF &&
-           current_addr < 0x200) { // Limit to prevent overflow
+    while ((c = fgetc(file)) != EOF && current_addr < 0x200) { // Limit to prevent overflow
       memory_write_byte(&vm->memory, current_addr, (uint8_t)c);
       current_addr++;
     }
@@ -114,14 +112,14 @@ void dez_vm_load_program(dez_vm_t *vm, const char *filename) {
 
 // Execute one instruction
 void dez_vm_step(dez_vm_t *vm) {
-  if (UNLIKELY(vm->cpu.state != VM_STATE_RUNNING)) {
+  if (UNLIKELY(vm->cpu.state != DEZ_VM_STATE_RUNNING)) {
     return;
   }
 
   // Check bounds
-  if (UNLIKELY(vm->cpu.pc >= MEMORY_SIZE_WORDS)) {
+  if (UNLIKELY(vm->cpu.pc >= DEZ_MEMORY_SIZE_WORDS)) {
     printf("Error: Program counter out of bounds\n");
-    vm->cpu.state = VM_STATE_ERROR;
+    vm->cpu.state = DEZ_VM_STATE_ERROR;
     return;
   }
 
@@ -154,14 +152,13 @@ void dez_vm_run(dez_vm_t *vm) {
   const int MAX_STEPS =
       vm->debug_mode ? 10000 : 100000; // Higher limit for release
 
-  while (LIKELY(vm->cpu.state == VM_STATE_RUNNING)) {
+  while (LIKELY(vm->cpu.state == DEZ_VM_STATE_RUNNING)) {
     dez_vm_step(vm);
 
     // Safety check to prevent infinite loops
     if (UNLIKELY(++step_count > MAX_STEPS)) {
-      printf("Error: Too many steps (%d), possible infinite loop\n",
-             step_count);
-      vm->cpu.state = VM_STATE_ERROR;
+      printf("Error: Too many steps (%d), possible infinite loop\n", step_count);
+      vm->cpu.state = DEZ_VM_STATE_ERROR;
       break;
     }
   }

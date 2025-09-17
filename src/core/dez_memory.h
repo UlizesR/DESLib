@@ -1,28 +1,37 @@
+/**
+ * @file dez_memory.h
+ * @brief DEZ Virtual Machine Memory Management
+ *
+ * This file defines the memory management system for the DEZ VM,
+ * including memory segments, protection, and access functions.
+ */
+
 #ifndef DEZ_MEMORY_H
 #define DEZ_MEMORY_H
 
+#include "../include/dez_vm_types.h"
 #include <stdbool.h>
 #include <stdint.h>
 
-// Memory size constants for 16KB VM
-#define MEMORY_SIZE_BYTES 16384
-#define MEMORY_SIZE_WORDS 4096
+// ============================================================================
+// MEMORY SEGMENT CONSTANTS
+// ============================================================================
 
 // Segment boundaries for 16KB (4096 words)
-#define CODE_START 0x0000
-#define CODE_END 0x03FF // First 1KB (256 words)
-#define DATA_START 0x0400
-#define DATA_END 0x07FF // Second 1KB (256 words)
-#define STACK_START 0x0800
-#define STACK_END 0x0FFF // Last 2KB (512 words)
+#define DEZ_CODE_START 0x0000
+#define DEZ_CODE_END 0x03FF // First 1KB (256 words)
+#define DEZ_DATA_START 0x0400
+#define DEZ_DATA_END 0x07FF // Second 1KB (256 words)
+#define DEZ_STACK_START 0x0800
+#define DEZ_STACK_END 0x0FFF // Last 2KB (512 words)
 
 // Segment sizes
-#define CODE_SIZE 0x0400  // 1KB (256 words)
-#define DATA_SIZE 0x0400  // 1KB (256 words)
-#define STACK_SIZE 0x0800 // 2KB (512 words)
+#define DEZ_CODE_SIZE 0x0400  // 1KB (256 words)
+#define DEZ_DATA_SIZE 0x0400  // 1KB (256 words)
+#define DEZ_STACK_SIZE 0x0800 // 2KB (512 words)
 
 typedef struct {
-  uint32_t memory[MEMORY_SIZE_WORDS];
+  uint32_t memory[DEZ_MEMORY_SIZE_WORDS];
 
   // Memory segment boundaries
   uint32_t code_start;

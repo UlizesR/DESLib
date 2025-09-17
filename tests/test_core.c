@@ -11,7 +11,7 @@ int test_basic_functionality() {
   dez_vm_t vm;
   dez_vm_init(&vm);
   assert(vm.cpu.pc == 0);
-  assert(vm.cpu.state == VM_STATE_RUNNING);
+  assert(vm.cpu.state == DEZ_VM_STATE_RUNNING);
   assert(vm.cpu.flags == 0);
   for (int i = 0; i < 16; i++) {
     assert(vm.cpu.regs[i] == 0);
@@ -31,7 +31,7 @@ int test_basic_functionality() {
   memory_set_protection(&vm.memory, 0, true);
 
   dez_vm_run(&vm);
-  assert(vm.cpu.state == VM_STATE_HALTED);
+  assert(vm.cpu.state == DEZ_VM_STATE_HALTED);
   assert(vm.cpu.regs[0] == 42);
 
   printf("✅ Basic functionality passed\n");
@@ -64,7 +64,7 @@ int test_arithmetic_operations() {
 
   dez_vm_run(&vm);
 
-  assert(vm.cpu.state == VM_STATE_HALTED);
+  assert(vm.cpu.state == DEZ_VM_STATE_HALTED);
   assert(vm.cpu.regs[2] == 24); // ADD
   assert(vm.cpu.regs[3] == 16); // SUB
   assert(vm.cpu.regs[4] == 80); // MUL
@@ -98,7 +98,7 @@ int test_memory_operations() {
 
   dez_vm_run(&vm);
 
-  assert(vm.cpu.state == VM_STATE_HALTED);
+  assert(vm.cpu.state == DEZ_VM_STATE_HALTED);
   assert(memory_read_word(&vm.memory, 256) == 123);
   assert(memory_read_word(&vm.memory, 257) == 456);
 
@@ -132,7 +132,7 @@ int test_conditional_jumps() {
 
   dez_vm_run(&vm);
 
-  assert(vm.cpu.state == VM_STATE_HALTED);
+  assert(vm.cpu.state == DEZ_VM_STATE_HALTED);
   assert(vm.cpu.regs[0] == 5);
   assert(vm.cpu.regs[1] == 5);
   assert(vm.cpu.regs[2] == 0);  // Should be 0 (instruction skipped)
@@ -169,7 +169,7 @@ int test_system_calls() {
   dez_vm_run(&vm);
   printf("\n");
 
-  assert(vm.cpu.state == VM_STATE_HALTED);
+  assert(vm.cpu.state == DEZ_VM_STATE_HALTED);
   assert(vm.cpu.regs[0] == 42);
   assert(vm.cpu.regs[1] == 65);
 
@@ -200,7 +200,7 @@ int test_error_handling() {
   memory_set_protection(&vm1.memory, 0, true);
 
   dez_vm_run(&vm1);
-  assert(vm1.cpu.state == VM_STATE_ERROR);
+  assert(vm1.cpu.state == DEZ_VM_STATE_ERROR);
 
   // Test unknown instruction
   dez_vm_t vm2;
@@ -220,7 +220,7 @@ int test_error_handling() {
   memory_set_protection(&vm2.memory, 0, true);
 
   dez_vm_run(&vm2);
-  assert(vm2.cpu.state == VM_STATE_ERROR);
+  assert(vm2.cpu.state == DEZ_VM_STATE_ERROR);
 
   printf("✅ Error handling passed\n");
   return 0;

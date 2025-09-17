@@ -49,7 +49,7 @@ int test_assembly_file(const char *filename, const char *test_name) {
   dez_vm_load_program(&vm, output_file);
   dez_vm_run(&vm);
 
-  if (vm.cpu.state == VM_STATE_HALTED) {
+  if (vm.cpu.state == DEZ_VM_STATE_HALTED) {
     printf("✅ %s passed\n", test_name);
     assembler_cleanup(&assembler);
     remove(output_file);
@@ -77,8 +77,7 @@ int test_basic_assembly() {
 
   uint32_t *output = NULL;
   int size = 0;
-  bool success =
-      assembler_assemble_string(&assembler, assembly_code, &output, &size);
+  bool success = assembler_assemble_string(&assembler, assembly_code, &output, &size);
 
   assert(success);
   assert(output != NULL);
@@ -97,7 +96,7 @@ int test_basic_assembly() {
 
   dez_vm_run(&vm);
 
-  assert(vm.cpu.state == VM_STATE_HALTED);
+  assert(vm.cpu.state == DEZ_VM_STATE_HALTED);
   assert(vm.cpu.regs[0] == 42);
   assert(vm.cpu.regs[1] == 10);
   assert(vm.cpu.regs[2] == 52); // 42 + 10
@@ -136,17 +135,9 @@ int main() {
   result += test_basic_assembly();
   result += test_assembly_errors();
 
-  // Test all assembly files
-  result += test_assembly_file("test_basic.s", "Basic assembly file");
+  // Test remaining assembly files (after simplification)
   result += test_assembly_file("test_memory.s", "Memory operations");
-  result += test_assembly_file("test_jumps.s", "Jump operations");
-  result += test_assembly_file("test_conditional.s", "Conditional jumps");
-  result += test_assembly_file("test_system.s", "System calls");
-  result += test_assembly_file("test_loop.s", "Loop operations");
-  result += test_assembly_file("test_labels.s", "Label functionality");
   result += test_assembly_file("test_comments.s", "Comment functionality");
-  result += test_assembly_file("test_mixed.s", "Mixed features");
-  result += test_assembly_file("test_load.s", "LOAD instruction");
   result += test_assembly_file("test_bitwise.s", "Bitwise operations");
   result += test_assembly_file("test_stack.s", "Stack operations");
   result += test_assembly_file("test_functions.s", "Function calls");

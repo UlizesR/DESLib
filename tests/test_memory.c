@@ -185,7 +185,7 @@ int test_vm_memory_integration() {
 
   dez_vm_run(&vm);
 
-  assert(vm.cpu.state == VM_STATE_HALTED);
+  assert(vm.cpu.state == DEZ_VM_STATE_HALTED);
 
   // Check memory contents
   uint32_t val1 = memory_read_word(&vm.memory, 0x0040);

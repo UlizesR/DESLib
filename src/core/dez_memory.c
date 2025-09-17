@@ -11,12 +11,12 @@ void memory_init(dez_memory_t *mem) {
   memset(mem->memory, 0, sizeof(mem->memory));
 
   // Set up segment boundaries
-  mem->code_start = CODE_START;
-  mem->code_end = CODE_END;
-  mem->data_start = DATA_START;
-  mem->data_end = DATA_END;
-  mem->stack_start = STACK_START;
-  mem->stack_end = STACK_END;
+  mem->code_start = DEZ_CODE_START;
+  mem->code_end = DEZ_CODE_END;
+  mem->data_start = DEZ_DATA_START;
+  mem->data_end = DEZ_DATA_END;
+  mem->stack_start = DEZ_STACK_START;
+  mem->stack_end = DEZ_STACK_END;
 
   // Set up memory protection flags
   mem->code_readonly = true;  // Code segment is read-only
@@ -38,7 +38,7 @@ void memory_init(dez_memory_t *mem) {
 // Check if an address is within valid bounds
 bool memory_is_valid_address(dez_memory_t *mem, uint32_t address) {
   (void)mem; // Suppress unused parameter warning
-  return (address < MEMORY_SIZE_WORDS);
+  return (address < DEZ_MEMORY_SIZE_WORDS);
 }
 
 // Check if an address is in the code segment
@@ -74,8 +74,7 @@ uint32_t memory_read_word_fast(dez_memory_t *mem, uint32_t address) {
 }
 
 // Fast path memory write (no validation, no statistics)
-int memory_write_word_fast(dez_memory_t *mem, uint32_t address,
-                           uint32_t value) {
+int memory_write_word_fast(dez_memory_t *mem, uint32_t address, uint32_t value) {
   mem->memory[address] = value;
   return 0;
 }
@@ -88,7 +87,7 @@ uint32_t memory_read_word(dez_memory_t *mem, uint32_t address) {
   }
 
   // Fast path for common case
-  if (LIKELY(address < MEMORY_SIZE_WORDS)) {
+  if (LIKELY(address < DEZ_MEMORY_SIZE_WORDS)) {
     // Update statistics only in debug mode
 #ifdef DEBUG_MEMORY_STATS
     mem->access_count++;
@@ -142,7 +141,7 @@ int memory_write_word(dez_memory_t *mem, uint32_t address, uint32_t value) {
   }
 
   // Fast path for common case
-  if (LIKELY(address < MEMORY_SIZE_WORDS)) {
+  if (LIKELY(address < DEZ_MEMORY_SIZE_WORDS)) {
     // Check write permissions only for code segment
     if (UNLIKELY(memory_is_code_segment(mem, address) && mem->code_readonly)) {
       printf("Error: Write to read-only memory at address 0x%04X\n", address);
@@ -214,7 +213,7 @@ uint8_t memory_read_byte(dez_memory_t *mem, uint32_t address) {
   uint32_t word_addr = address >> 2;  // Optimized division by 4
   uint32_t byte_offset = address & 3; // Optimized modulo 4
 
-  if (UNLIKELY(word_addr >= MEMORY_SIZE_WORDS)) {
+  if (UNLIKELY(word_addr >= DEZ_MEMORY_SIZE_WORDS)) {
     printf("Error: Memory read out of bounds at address 0x%04X\n", address);
     return 0;
   }
@@ -236,7 +235,7 @@ int memory_write_byte(dez_memory_t *mem, uint32_t address, uint8_t value) {
   uint32_t word_addr = address >> 2;  // Optimized division by 4
   uint32_t byte_offset = address & 3; // Optimized modulo 4
 
-  if (UNLIKELY(word_addr >= MEMORY_SIZE_WORDS)) {
+  if (UNLIKELY(word_addr >= DEZ_MEMORY_SIZE_WORDS)) {
     printf("Error: Memory write out of bounds at address 0x%04X\n", address);
     return -1;
   }
@@ -267,14 +266,10 @@ void memory_print_stats(dez_memory_t *mem) {
   }
 
   printf("\n=== Memory Statistics ===\n");
-  printf("Total Memory: %d words (%d bytes)\n", MEMORY_SIZE_WORDS,
-         MEMORY_SIZE_BYTES);
-  printf("Code Segment: 0x%04X - 0x%04X (%d words)\n", mem->code_start,
-         mem->code_end, CODE_SIZE);
-  printf("Data Segment: 0x%04X - 0x%04X (%d words)\n", mem->data_start,
-         mem->data_end, DATA_SIZE);
-  printf("Stack Segment: 0x%04X - 0x%04X (%d words)\n", mem->stack_start,
-         mem->stack_end, STACK_SIZE);
+  printf("Total Memory: %d words (%d bytes)\n", DEZ_MEMORY_SIZE_WORDS, DEZ_MEMORY_SIZE_BYTES);
+  printf("Code Segment: 0x%04X - 0x%04X (%d words)\n", mem->code_start, mem->code_end, DEZ_CODE_SIZE);
+  printf("Data Segment: 0x%04X - 0x%04X (%d words)\n", mem->data_start, mem->data_end, DEZ_DATA_SIZE);
+  printf("Stack Segment: 0x%04X - 0x%04X (%d words)\n", mem->stack_start, mem->stack_end, DEZ_STACK_SIZE);
 
   printf("\nProtection Flags:\n");
   printf("  Code Read-Only: %s\n", mem->code_readonly ? "Yes" : "No");
@@ -284,8 +279,7 @@ void memory_print_stats(dez_memory_t *mem) {
   printf("\nUsage Statistics:\n");
   printf("  Code Usage: %d accesses\n", mem->code_usage);
   printf("  Data Usage: %d accesses\n", mem->data_usage);
-  printf("  Stack Usage: %d accesses (Max: %d)\n", mem->stack_usage,
-         mem->max_stack_usage);
+  printf("  Stack Usage: %d accesses (Max: %d)\n", mem->stack_usage, mem->max_stack_usage);
 
   printf("\nAccess Statistics:\n");
   printf("  Total Accesses: %d\n", mem->access_count);

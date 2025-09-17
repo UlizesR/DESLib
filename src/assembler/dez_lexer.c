@@ -206,18 +206,69 @@ token_t lexer_next_token(lexer_t *lexer) {
     return token;
   }
 
-  // Number
+  // Number (decimal, hexadecimal, or binary)
   if (lexer_is_digit(c)) {
     token.type = TOKEN_NUMBER;
     int i = 0;
+    int base = 10;
 
-    while (lexer_is_digit(lexer->input[lexer->position]) && i < 255) {
-      token.value[i++] = lexer->input[lexer->position++];
-      lexer->column++;
+    // Check for hexadecimal prefix (0x)
+    if (c == '0' && lexer->input[lexer->position + 1] == 'x') {
+      base = 16;
+      token.value[i++] = lexer->input[lexer->position++]; // '0'
+      token.value[i++] = lexer->input[lexer->position++]; // 'x'
+      lexer->column += 2;
+
+      // Parse hexadecimal digits
+      while (lexer->position < (int)strlen(lexer->input) && i < 255) {
+        char hex_char = lexer->input[lexer->position];
+        if ((hex_char >= '0' && hex_char <= '9') ||
+            (hex_char >= 'A' && hex_char <= 'F') ||
+            (hex_char >= 'a' && hex_char <= 'f')) {
+          token.value[i++] = hex_char;
+          lexer->position++;
+          lexer->column++;
+        } else {
+          break;
+        }
+      }
+    }
+    // Check for binary prefix (0b)
+    else if (c == '0' && lexer->input[lexer->position + 1] == 'b') {
+      base = 2;
+      token.value[i++] = lexer->input[lexer->position++]; // '0'
+      token.value[i++] = lexer->input[lexer->position++]; // 'b'
+      lexer->column += 2;
+
+      // Parse binary digits
+      while (lexer->position < (int)strlen(lexer->input) && i < 255) {
+        char bin_char = lexer->input[lexer->position];
+        if (bin_char == '0' || bin_char == '1') {
+          token.value[i++] = bin_char;
+          lexer->position++;
+          lexer->column++;
+        } else {
+          break;
+        }
+      }
+    }
+    // Regular decimal number
+    else {
+      while (lexer_is_digit(lexer->input[lexer->position]) && i < 255) {
+        token.value[i++] = lexer->input[lexer->position++];
+        lexer->column++;
+      }
     }
 
     token.value[i] = '\0';
-    token.num_value = (uint32_t)strtoul(token.value, NULL, 10);
+
+    // For binary and hex, we need to skip the prefix when converting
+    if (base == 2 || base == 16) {
+      // Skip the first two characters (0x or 0b) for strtoul
+      token.num_value = (uint32_t)strtoul(token.value + 2, NULL, base);
+    } else {
+      token.num_value = (uint32_t)strtoul(token.value, NULL, base);
+    }
     return token;
   }
 

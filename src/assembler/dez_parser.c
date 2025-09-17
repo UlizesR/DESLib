@@ -236,88 +236,94 @@ bool parser_parse_instruction(parser_t *parser, parsed_instruction_t *inst) {
 
   // Parse instruction type
   if (strcmp(token.value, "MOV") == 0) {
-    inst->type = INST_MOV;
+    inst->type = DEZ_INST_MOV;
     inst->num_operands = 2;
   } else if (strcmp(token.value, "LOAD") == 0) {
-    inst->type = INST_LOAD;
+    inst->type = DEZ_INST_LOAD;
     inst->num_operands = 2;
   } else if (strcmp(token.value, "STORE") == 0) {
-    inst->type = INST_STORE;
+    inst->type = DEZ_INST_STORE;
     inst->num_operands = 2;
   } else if (strcmp(token.value, "ADD") == 0) {
-    inst->type = INST_ADD;
+    inst->type = DEZ_INST_ADD;
     inst->num_operands = 3;
   } else if (strcmp(token.value, "SUB") == 0) {
-    inst->type = INST_SUB;
+    inst->type = DEZ_INST_SUB;
     inst->num_operands = 3;
   } else if (strcmp(token.value, "MUL") == 0) {
-    inst->type = INST_MUL;
+    inst->type = DEZ_INST_MUL;
     inst->num_operands = 3;
   } else if (strcmp(token.value, "DIV") == 0) {
-    inst->type = INST_DIV;
+    inst->type = DEZ_INST_DIV;
     inst->num_operands = 3;
   } else if (strcmp(token.value, "JMP") == 0) {
-    inst->type = INST_JMP;
+    inst->type = DEZ_INST_JMP;
     inst->num_operands = 1;
   } else if (strcmp(token.value, "JZ") == 0) {
-    inst->type = INST_JZ;
+    inst->type = DEZ_INST_JZ;
     inst->num_operands = 1;
   } else if (strcmp(token.value, "JNZ") == 0) {
-    inst->type = INST_JNZ;
+    inst->type = DEZ_INST_JNZ;
     inst->num_operands = 1;
   } else if (strcmp(token.value, "JL") == 0) {
-    inst->type = INST_JL;
+    inst->type = DEZ_INST_JL;
     inst->num_operands = 1;
   } else if (strcmp(token.value, "JG") == 0) {
-    inst->type = INST_JG;
+    inst->type = DEZ_INST_JG;
     inst->num_operands = 1;
   } else if (strcmp(token.value, "JLE") == 0) {
-    inst->type = INST_JLE;
+    inst->type = DEZ_INST_JLE;
     inst->num_operands = 1;
   } else if (strcmp(token.value, "JGE") == 0) {
-    inst->type = INST_JGE;
+    inst->type = DEZ_INST_JGE;
     inst->num_operands = 1;
   } else if (strcmp(token.value, "PUSH") == 0) {
-    inst->type = INST_PUSH;
+    inst->type = DEZ_INST_PUSH;
     inst->num_operands = 1;
   } else if (strcmp(token.value, "POP") == 0) {
-    inst->type = INST_POP;
+    inst->type = DEZ_INST_POP;
     inst->num_operands = 1;
   } else if (strcmp(token.value, "CMP") == 0) {
-    inst->type = INST_CMP;
+    inst->type = DEZ_INST_CMP;
     inst->num_operands = 2;
   } else if (strcmp(token.value, "SYS") == 0) {
-    inst->type = INST_SYS;
+    inst->type = DEZ_INST_SYS;
     inst->num_operands = 2;
   } else if (strcmp(token.value, "AND") == 0) {
-    inst->type = INST_AND;
+    inst->type = DEZ_INST_AND;
     inst->num_operands = 3;
   } else if (strcmp(token.value, "OR") == 0) {
-    inst->type = INST_OR;
+    inst->type = DEZ_INST_OR;
     inst->num_operands = 3;
   } else if (strcmp(token.value, "XOR") == 0) {
-    inst->type = INST_XOR;
+    inst->type = DEZ_INST_XOR;
     inst->num_operands = 3;
   } else if (strcmp(token.value, "NOT") == 0) {
-    inst->type = INST_NOT;
+    inst->type = DEZ_INST_NOT;
     inst->num_operands = 2;
   } else if (strcmp(token.value, "SHL") == 0) {
-    inst->type = INST_SHL;
+    inst->type = DEZ_INST_SHL;
     inst->num_operands = 3;
   } else if (strcmp(token.value, "SHR") == 0) {
-    inst->type = INST_SHR;
+    inst->type = DEZ_INST_SHR;
     inst->num_operands = 3;
   } else if (strcmp(token.value, "CALL") == 0) {
-    inst->type = INST_CALL;
+    inst->type = DEZ_INST_CALL;
     inst->num_operands = 1;
   } else if (strcmp(token.value, "RET") == 0) {
-    inst->type = INST_RET;
+    inst->type = DEZ_INST_RET;
     inst->num_operands = 0;
   } else if (strcmp(token.value, "HALT") == 0) {
-    inst->type = INST_HALT;
+    inst->type = DEZ_INST_HALT;
     inst->num_operands = 0;
+  } else if (strcmp(token.value, "INC") == 0) {
+    inst->type = DEZ_INST_INC;
+    inst->num_operands = 1;
+  } else if (strcmp(token.value, "DEC") == 0) {
+    inst->type = DEZ_INST_DEC;
+    inst->num_operands = 1;
   } else if (strcmp(token.value, "NOP") == 0) {
-    inst->type = INST_NOP;
+    inst->type = DEZ_INST_NOP;
     inst->num_operands = 0;
   } else {
     parser_error(parser, "Unknown instruction");
@@ -350,14 +356,14 @@ bool parser_parse_operand(parser_t *parser, dez_operand_t *operand) {
   token_t token = parser_current_token(parser);
 
   if (token.type == TOKEN_REGISTER) {
-    operand->type = OP_REGISTER;
+    operand->type = DEZ_OP_REGISTER;
     operand->reg = register_name_to_number(token.value);
     parser_advance(parser);
     return true;
   }
 
   if (token.type == TOKEN_STRING) {
-    operand->type = OP_STRING;
+    operand->type = DEZ_OP_STRING;
     strncpy(operand->string, token.value, sizeof(operand->string) - 1);
     operand->string[sizeof(operand->string) - 1] = '\0';
     parser_advance(parser);
@@ -365,7 +371,7 @@ bool parser_parse_operand(parser_t *parser, dez_operand_t *operand) {
   }
 
   if (token.type == TOKEN_NUMBER) {
-    operand->type = OP_IMMEDIATE;
+    operand->type = DEZ_OP_IMMEDIATE;
     operand->value = token.num_value;
     parser_advance(parser);
     return true;
@@ -376,26 +382,26 @@ bool parser_parse_operand(parser_t *parser, dez_operand_t *operand) {
     token = parser_current_token(parser);
 
     if (token.type == TOKEN_NUMBER) {
-      operand->type = OP_IMMEDIATE;
+      operand->type = DEZ_OP_IMMEDIATE;
       operand->value = token.num_value;
       parser_advance(parser);
       return true;
     } else if (token.type == TOKEN_IDENTIFIER) {
       // Check if it's a system call name
       if (strcmp(token.value, "PRINT") == 0) {
-        operand->type = OP_IMMEDIATE;
-        operand->value = SYS_PRINT;
+        operand->type = DEZ_OP_IMMEDIATE;
+        operand->value = DEZ_SYS_PRINT;
       } else if (strcmp(token.value, "PRINT_STR") == 0) {
-        operand->type = OP_IMMEDIATE;
-        operand->value = SYS_PRINT_STR;
+        operand->type = DEZ_OP_IMMEDIATE;
+        operand->value = DEZ_SYS_PRINT_STR;
       } else if (strcmp(token.value, "PRINT_CHAR") == 0) {
-        operand->type = OP_IMMEDIATE;
-        operand->value = SYS_PRINT_CHAR;
+        operand->type = DEZ_OP_IMMEDIATE;
+        operand->value = DEZ_SYS_PRINT_CHAR;
       } else if (strcmp(token.value, "EXIT") == 0) {
-        operand->type = OP_IMMEDIATE;
-        operand->value = SYS_EXIT;
+        operand->type = DEZ_OP_IMMEDIATE;
+        operand->value = DEZ_SYS_EXIT;
       } else {
-        operand->type = OP_LABEL;
+        operand->type = DEZ_OP_LABEL;
         strncpy(operand->label, token.value, sizeof(operand->label) - 1);
         operand->label[sizeof(operand->label) - 1] = '\0';
       }
@@ -409,11 +415,11 @@ bool parser_parse_operand(parser_t *parser, dez_operand_t *operand) {
     token = parser_current_token(parser);
 
     if (token.type == TOKEN_NUMBER) {
-      operand->type = OP_MEMORY;
+      operand->type = DEZ_OP_MEMORY;
       operand->address = token.num_value;
       parser_advance(parser);
     } else if (token.type == TOKEN_IDENTIFIER) {
-      operand->type = OP_MEMORY;
+      operand->type = DEZ_OP_MEMORY;
       strncpy(operand->label, token.value, sizeof(operand->label) - 1);
       operand->label[sizeof(operand->label) - 1] = '\0';
       parser_advance(parser);
@@ -432,19 +438,19 @@ bool parser_parse_operand(parser_t *parser, dez_operand_t *operand) {
   if (token.type == TOKEN_IDENTIFIER) {
     // Check if it's a system call name
     if (strcmp(token.value, "PRINT") == 0) {
-      operand->type = OP_IMMEDIATE;
-      operand->value = SYS_PRINT;
+      operand->type = DEZ_OP_IMMEDIATE;
+      operand->value = DEZ_SYS_PRINT;
     } else if (strcmp(token.value, "PRINT_STR") == 0) {
-      operand->type = OP_IMMEDIATE;
-      operand->value = SYS_PRINT_STR;
+      operand->type = DEZ_OP_IMMEDIATE;
+      operand->value = DEZ_SYS_PRINT_STR;
     } else if (strcmp(token.value, "PRINT_CHAR") == 0) {
-      operand->type = OP_IMMEDIATE;
-      operand->value = SYS_PRINT_CHAR;
+      operand->type = DEZ_OP_IMMEDIATE;
+      operand->value = DEZ_SYS_PRINT_CHAR;
     } else if (strcmp(token.value, "EXIT") == 0) {
-      operand->type = OP_IMMEDIATE;
-      operand->value = SYS_EXIT;
+      operand->type = DEZ_OP_IMMEDIATE;
+      operand->value = DEZ_SYS_EXIT;
     } else {
-      operand->type = OP_LABEL;
+      operand->type = DEZ_OP_LABEL;
       strncpy(operand->label, token.value, sizeof(operand->label) - 1);
       operand->label[sizeof(operand->label) - 1] = '\0';
     }
@@ -459,8 +465,8 @@ bool parser_parse_operand(parser_t *parser, dez_operand_t *operand) {
 // Encode instruction to binary
 uint32_t parser_encode_instruction(const parsed_instruction_t *inst) {
   switch (inst->type) {
-  case INST_MOV:
-    if (inst->operands[1].type == OP_STRING) {
+  case DEZ_INST_MOV:
+    if (inst->operands[1].type == DEZ_OP_STRING) {
       // Handle string literal - load address of string
       char symbol_name[64];
       snprintf(symbol_name, sizeof(symbol_name), "__str_%s",
@@ -471,7 +477,7 @@ uint32_t parser_encode_instruction(const parsed_instruction_t *inst) {
       symbol_t *sym = symbol_table_find(inst->symbol_table, symbol_name);
       uint32_t string_addr = sym ? sym->address : 0;
       return parser_encode_mov(inst->operands[0].reg, string_addr);
-    } else if (inst->operands[1].type == OP_LABEL) {
+    } else if (inst->operands[1].type == DEZ_OP_LABEL) {
       // Resolve label to address
       symbol_t *sym =
           symbol_table_find(inst->symbol_table, inst->operands[1].label);
@@ -480,8 +486,8 @@ uint32_t parser_encode_instruction(const parsed_instruction_t *inst) {
     } else {
       return parser_encode_mov(inst->operands[0].reg, inst->operands[1].value);
     }
-  case INST_LOAD:
-    if (inst->operands[1].type == OP_LABEL) {
+  case DEZ_INST_LOAD:
+    if (inst->operands[1].type == DEZ_OP_LABEL) {
       // Resolve label to address
       symbol_t *sym =
           symbol_table_find(inst->symbol_table, inst->operands[1].label);
@@ -491,15 +497,15 @@ uint32_t parser_encode_instruction(const parsed_instruction_t *inst) {
       return parser_encode_load(inst->operands[0].reg,
                                 inst->operands[1].address);
     }
-  case INST_STORE:
+  case DEZ_INST_STORE:
     return parser_encode_store(inst->operands[0].reg,
                                inst->operands[1].address);
-  case INST_ADD:
-  case INST_SUB:
-  case INST_MUL:
-  case INST_DIV:
+  case DEZ_INST_ADD:
+  case DEZ_INST_SUB:
+  case DEZ_INST_MUL:
+  case DEZ_INST_DIV:
     // Check if the third operand is an immediate value
-    if (inst->operands[2].type == OP_IMMEDIATE) {
+    if (inst->operands[2].type == DEZ_OP_IMMEDIATE) {
       // Encode as (opcode << 24) | (reg1 << 20) | (reg2 << 16) | (1 << 11) |
       // immediate Use bit 11 as a flag to indicate immediate mode
       return (inst->type << 24) | (inst->operands[0].reg << 20) |
@@ -511,8 +517,8 @@ uint32_t parser_encode_instruction(const parsed_instruction_t *inst) {
                                       inst->operands[1].reg,
                                       inst->operands[2].reg);
     }
-  case INST_JMP:
-    if (inst->operands[0].type == OP_LABEL) {
+  case DEZ_INST_JMP:
+    if (inst->operands[0].type == DEZ_OP_LABEL) {
       // Resolve label to address
       symbol_t *sym =
           symbol_table_find(inst->symbol_table, inst->operands[0].label);
@@ -521,13 +527,13 @@ uint32_t parser_encode_instruction(const parsed_instruction_t *inst) {
     } else {
       return parser_encode_jump(inst->type, 0, inst->operands[0].value);
     }
-  case INST_JZ:
-  case INST_JNZ:
-  case INST_JL:
-  case INST_JG:
-  case INST_JLE:
-  case INST_JGE:
-    if (inst->operands[0].type == OP_LABEL) {
+  case DEZ_INST_JZ:
+  case DEZ_INST_JNZ:
+  case DEZ_INST_JL:
+  case DEZ_INST_JG:
+  case DEZ_INST_JLE:
+  case DEZ_INST_JGE:
+    if (inst->operands[0].type == DEZ_OP_LABEL) {
       // Resolve label to address
       symbol_t *sym =
           symbol_table_find(inst->symbol_table, inst->operands[0].label);
@@ -536,34 +542,34 @@ uint32_t parser_encode_instruction(const parsed_instruction_t *inst) {
     } else {
       return parser_encode_jump(inst->type, 0, inst->operands[0].value);
     }
-  case INST_CMP:
-    if (inst->operands[1].type == OP_IMMEDIATE) {
+  case DEZ_INST_CMP:
+    if (inst->operands[1].type == DEZ_OP_IMMEDIATE) {
       // CMP with immediate value - encode as (opcode << 24) | (reg << 20) |
       // immediate
-      return (INST_CMP << 24) | (inst->operands[0].reg << 20) |
+      return (DEZ_INST_CMP << 24) | (inst->operands[0].reg << 20) |
              (inst->operands[1].value & 0x0FFF);
     } else {
       return parser_encode_arithmetic(inst->type, inst->operands[0].reg,
                                       inst->operands[1].reg, 0);
     }
-  case INST_SYS:
+  case DEZ_INST_SYS:
     return parser_encode_sys(inst->operands[0].reg, inst->operands[1].value);
-  case INST_PUSH:
-  case INST_POP:
+  case DEZ_INST_PUSH:
+  case DEZ_INST_POP:
     return parser_encode_single_register(inst->type, inst->operands[0].reg);
-  case INST_AND:
-  case INST_OR:
-  case INST_XOR:
-  case INST_SHL:
-  case INST_SHR:
+  case DEZ_INST_AND:
+  case DEZ_INST_OR:
+  case DEZ_INST_XOR:
+  case DEZ_INST_SHL:
+  case DEZ_INST_SHR:
     return parser_encode_arithmetic(inst->type, inst->operands[0].reg,
                                     inst->operands[1].reg,
                                     inst->operands[2].reg);
-  case INST_NOT:
+  case DEZ_INST_NOT:
     return parser_encode_arithmetic(inst->type, inst->operands[0].reg,
                                     inst->operands[1].reg, 0);
-  case INST_CALL:
-    if (inst->operands[0].type == OP_LABEL) {
+  case DEZ_INST_CALL:
+    if (inst->operands[0].type == DEZ_OP_LABEL) {
       // Resolve label to address
       symbol_t *sym =
           symbol_table_find(inst->symbol_table, inst->operands[0].label);
@@ -572,9 +578,12 @@ uint32_t parser_encode_instruction(const parsed_instruction_t *inst) {
     } else {
       return parser_encode_jump(inst->type, 0, inst->operands[0].value);
     }
-  case INST_RET:
-  case INST_HALT:
-  case INST_NOP:
+  case DEZ_INST_INC:
+  case DEZ_INST_DEC:
+    return parser_encode_single_register(inst->type, inst->operands[0].reg);
+  case DEZ_INST_RET:
+  case DEZ_INST_HALT:
+  case DEZ_INST_NOP:
     return parser_encode_single(inst->type);
   default:
     return 0;
@@ -583,17 +592,17 @@ uint32_t parser_encode_instruction(const parsed_instruction_t *inst) {
 
 // Encode MOV instruction
 uint32_t parser_encode_mov(uint8_t reg, uint32_t immediate) {
-  return (INST_MOV << 24) | (reg << 20) | (immediate & 0x0FFF);
+  return (DEZ_INST_MOV << 24) | (reg << 20) | (immediate & 0x0FFF);
 }
 
 // Encode LOAD instruction
 uint32_t parser_encode_load(uint8_t reg, uint32_t address) {
-  return (INST_LOAD << 24) | (reg << 20) | (address & 0x0FFF);
+  return (DEZ_INST_LOAD << 24) | (reg << 20) | (address & 0x0FFF);
 }
 
 // Encode STORE instruction
 uint32_t parser_encode_store(uint8_t reg, uint32_t address) {
-  return (INST_STORE << 24) | (reg << 20) | (address & 0x0FFF);
+  return (DEZ_INST_STORE << 24) | (reg << 20) | (address & 0x0FFF);
 }
 
 // Encode arithmetic instruction
@@ -610,7 +619,7 @@ uint32_t parser_encode_jump(dez_instruction_type_t type, uint8_t reg,
 
 // Encode system call
 uint32_t parser_encode_sys(uint8_t reg, uint32_t syscall) {
-  return (INST_SYS << 24) | (reg << 20) | (syscall & 0x0FFF);
+  return (DEZ_INST_SYS << 24) | (reg << 20) | (syscall & 0x0FFF);
 }
 
 // Encode single instruction

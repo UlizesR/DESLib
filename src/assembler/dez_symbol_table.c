@@ -12,7 +12,7 @@ void symbol_table_init(symbol_table_t *table) {
   memset(table->symbols, 0, sizeof(table->symbols));
 
   // Initialize hash table to empty (-1)
-  for (int i = 0; i < SYMBOL_HASH_SIZE; i++) {
+  for (int i = 0; i < DEZ_SYMBOL_HASH_SIZE; i++) {
     table->hash_table[i] = -1;
   }
 }
@@ -61,7 +61,7 @@ static uint32_t symbol_hash(const char *name) {
   while ((c = *name++)) {
     hash = ((hash << 5) + hash) + c; // hash * 33 + c
   }
-  return hash % SYMBOL_HASH_SIZE;
+  return hash % DEZ_SYMBOL_HASH_SIZE;
 }
 
 // Find symbol by name (optimized with hash table)

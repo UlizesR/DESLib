@@ -41,7 +41,7 @@ int test_string_printing() {
   dez_vm_run(&vm);
   printf("\n");
 
-  assert(vm.cpu.state == VM_STATE_HALTED);
+  assert(vm.cpu.state == DEZ_VM_STATE_HALTED);
   assert(vm.cpu.regs[0] == 0x100);
 
   printf("✅ String printing test passed\n");
@@ -77,7 +77,7 @@ int test_character_printing() {
   dez_vm_run(&vm);
   printf("\n");
 
-  assert(vm.cpu.state == VM_STATE_HALTED);
+  assert(vm.cpu.state == DEZ_VM_STATE_HALTED);
   assert(vm.cpu.regs[0] == 65);
   assert(vm.cpu.regs[1] == 66);
 
@@ -143,7 +143,7 @@ int test_multiple_strings() {
   dez_vm_run(&vm);
   printf("\n");
 
-  assert(vm.cpu.state == VM_STATE_HALTED);
+  assert(vm.cpu.state == DEZ_VM_STATE_HALTED);
 
   printf("✅ Multiple strings test passed\n");
   return 0;
@@ -158,7 +158,8 @@ int test_special_characters() {
   memory_set_protection(&vm.memory, 0, false);
 
   // Store string with various escape sequences
-  const char *test_string = "Line1\\nLine2\\tTab\\rCarriage\\\"Quote\\\\Backslash";
+  const char *test_string =
+      "Line1\\nLine2\\tTab\\rCarriage\\\"Quote\\\\Backslash";
   uint32_t addr = 0x100;
 
   // Write string to memory
@@ -181,12 +182,14 @@ int test_special_characters() {
   vm.program_size = 3;
   memory_set_protection(&vm.memory, 0, true);
 
-  printf("Expected output: Line1\\nLine2\\tTab\\rCarriage\\\"Quote\\\\Backslash (with actual escapes)\n");
+  printf(
+      "Expected output: Line1\\nLine2\\tTab\\rCarriage\\\"Quote\\\\Backslash "
+      "(with actual escapes)\n");
   printf("Actual output: ");
   dez_vm_run(&vm);
   printf("\n");
 
-  assert(vm.cpu.state == VM_STATE_HALTED);
+  assert(vm.cpu.state == DEZ_VM_STATE_HALTED);
 
   printf("✅ Special characters test passed\n");
   return 0;

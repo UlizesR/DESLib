@@ -7,31 +7,37 @@
 // Get instruction mnemonic
 const char *dez_get_instruction_mnemonic(uint8_t opcode) {
   switch (opcode) {
-  case INST_LOAD:
+  case DEZ_INST_MOV:
+    return "MOV";
+  case DEZ_INST_LOAD:
     return "LOAD";
-  case INST_STORE:
+  case DEZ_INST_STORE:
     return "STORE";
-  case INST_ADD:
+  case DEZ_INST_ADD:
     return "ADD";
-  case INST_SUB:
+  case DEZ_INST_SUB:
     return "SUB";
-  case INST_MUL:
+  case DEZ_INST_MUL:
     return "MUL";
-  case INST_DIV:
+  case DEZ_INST_DIV:
     return "DIV";
-  case INST_JMP:
+  case DEZ_INST_JMP:
     return "JMP";
-  case INST_JZ:
+  case DEZ_INST_JZ:
     return "JZ";
-  case INST_JNZ:
+  case DEZ_INST_JNZ:
     return "JNZ";
-  case INST_CMP:
+  case DEZ_INST_CMP:
     return "CMP";
-  case INST_SYS:
+  case DEZ_INST_SYS:
     return "SYS";
-  case INST_HALT:
+  case DEZ_INST_INC:
+    return "INC";
+  case DEZ_INST_DEC:
+    return "DEC";
+  case DEZ_INST_HALT:
     return "HALT";
-  case INST_NOP:
+  case DEZ_INST_NOP:
     return "NOP";
   default:
     return "UNKNOWN";
@@ -53,19 +59,19 @@ const char *dez_get_register_name(uint8_t reg) {
 // Get system call name
 const char *dez_get_syscall_name(uint32_t syscall) {
   switch (syscall) {
-  case SYS_PRINT:
+  case DEZ_SYS_PRINT:
     return "PRINT";
-  case SYS_PRINT_STR:
+  case DEZ_SYS_PRINT_STR:
     return "PRINT_STR";
-  case SYS_PRINT_CHAR:
+  case DEZ_SYS_PRINT_CHAR:
     return "PRINT_CHAR";
-  case SYS_READ:
+  case DEZ_SYS_READ:
     return "READ";
-  case SYS_READ_STR:
+  case DEZ_SYS_READ_STR:
     return "READ_STR";
-  case SYS_EXIT:
+  case DEZ_SYS_EXIT:
     return "EXIT";
-  case SYS_DEBUG:
+  case DEZ_SYS_DEBUG:
     return "DEBUG";
   default:
     return "UNKNOWN_SYS";
@@ -73,8 +79,7 @@ const char *dez_get_syscall_name(uint32_t syscall) {
 }
 
 // Helper function to safely format strings
-static void safe_snprintf(char *output, size_t output_size, const char *format,
-                          ...) {
+static void safe_snprintf(char *output, size_t output_size, const char *format, ...) {
   va_list args;
   va_start(args, format);
   vsnprintf(output, output_size, format, args);
@@ -83,97 +88,92 @@ static void safe_snprintf(char *output, size_t output_size, const char *format,
 }
 
 // Disassemble a single instruction
-void dez_disasm_instruction(uint32_t instruction, char *output,
-                            size_t output_size) {
+void dez_disasm_instruction(uint32_t instruction, char *output, size_t output_size) {
   if (!output || output_size == 0)
     return;
 
   // Decode instruction
-  uint8_t opcode = (instruction >> 24) & 0xFF;
-  uint8_t reg1 = (instruction >> 20) & 0xF;
-  uint8_t reg2 = (instruction >> 16) & 0xF;
-  uint8_t reg3 = (instruction >> 12) & 0xF;
-  uint32_t immediate = instruction & 0x0FFF;
+  uint8_t opcode = DEZ_DECODE_OPCODE(instruction);
+  uint8_t reg1 = DEZ_DECODE_REG1(instruction);
+  uint8_t reg2 = DEZ_DECODE_REG2(instruction);
+  uint8_t reg3 = DEZ_DECODE_REG3(instruction);
+  uint32_t immediate = DEZ_DECODE_IMMEDIATE(instruction);
 
   const char *mnemonic = dez_get_instruction_mnemonic(opcode);
 
   switch (opcode) {
-  case INST_LOAD: // LOAD immediate
-    safe_snprintf(output, output_size, "%s %s, #%d", mnemonic,
-                  dez_get_register_name(reg1), immediate);
+  case DEZ_INST_MOV: // MOVE immediate
+    safe_snprintf(output, output_size, "%s %s, #%d", mnemonic, dez_get_register_name(reg1), immediate);
     break;
 
-  case INST_STORE: // STORE to memory
-    safe_snprintf(output, output_size, "%s %s, [%d]", mnemonic,
-                  dez_get_register_name(reg1), immediate);
+  case DEZ_INST_LOAD: // LOAD immediate
+    safe_snprintf(output, output_size, "%s %s, #%d", mnemonic, dez_get_register_name(reg1), immediate);
     break;
 
-  case INST_ADD: // ADD
-    safe_snprintf(output, output_size, "%s %s, %s, %s", mnemonic,
-                  dez_get_register_name(reg1), dez_get_register_name(reg2),
-                  dez_get_register_name(reg3));
+  case DEZ_INST_STORE: // STORE to memory
+    safe_snprintf(output, output_size, "%s %s, [%d]", mnemonic, dez_get_register_name(reg1), immediate);
     break;
 
-  case INST_SUB: // SUB
-    safe_snprintf(output, output_size, "%s %s, %s, %s", mnemonic,
-                  dez_get_register_name(reg1), dez_get_register_name(reg2),
-                  dez_get_register_name(reg3));
+  case DEZ_INST_ADD: // ADD
+    safe_snprintf(output, output_size, "%s %s, %s, %s", mnemonic, dez_get_register_name(reg1), dez_get_register_name(reg2), dez_get_register_name(reg3));
     break;
 
-  case INST_MUL: // MUL
-    safe_snprintf(output, output_size, "%s %s, %s, %s", mnemonic,
-                  dez_get_register_name(reg1), dez_get_register_name(reg2),
-                  dez_get_register_name(reg3));
+  case DEZ_INST_SUB: // SUB
+    safe_snprintf(output, output_size, "%s %s, %s, %s", mnemonic, dez_get_register_name(reg1), dez_get_register_name(reg2), dez_get_register_name(reg3));
     break;
 
-  case INST_DIV: // DIV
-    safe_snprintf(output, output_size, "%s %s, %s, %s", mnemonic,
-                  dez_get_register_name(reg1), dez_get_register_name(reg2),
-                  dez_get_register_name(reg3));
+  case DEZ_INST_MUL: // MUL
+    safe_snprintf(output, output_size, "%s %s, %s, %s", mnemonic, dez_get_register_name(reg1), dez_get_register_name(reg2), dez_get_register_name(reg3));
     break;
 
-  case INST_JMP: // JUMP
+  case DEZ_INST_DIV: // DIV
+    safe_snprintf(output, output_size, "%s %s, %s, %s", mnemonic, dez_get_register_name(reg1), dez_get_register_name(reg2), dez_get_register_name(reg3));
+    break;
+
+  case DEZ_INST_JMP: // JUMP
     safe_snprintf(output, output_size, "%s #%d", mnemonic, immediate);
     break;
 
-  case INST_JZ: // JUMP if zero
-    safe_snprintf(output, output_size, "%s %s, #%d", mnemonic,
-                  dez_get_register_name(reg1), immediate);
+  case DEZ_INST_JZ: // JUMP if zero
+    safe_snprintf(output, output_size, "%s %s, #%d", mnemonic, dez_get_register_name(reg1), immediate);
     break;
 
-  case INST_JNZ: // JUMP if not zero
-    safe_snprintf(output, output_size, "%s %s, #%d", mnemonic,
-                  dez_get_register_name(reg1), immediate);
+  case DEZ_INST_JNZ: // JUMP if not zero
+    safe_snprintf(output, output_size, "%s %s, #%d", mnemonic, dez_get_register_name(reg1), immediate);
     break;
 
-  case INST_CMP: // COMPARE
-    safe_snprintf(output, output_size, "%s %s, %s", mnemonic,
-                  dez_get_register_name(reg1), dez_get_register_name(reg2));
+  case DEZ_INST_CMP: // COMPARE
+    safe_snprintf(output, output_size, "%s %s, %s", mnemonic, dez_get_register_name(reg1), dez_get_register_name(reg2));
     break;
 
-  case INST_SYS: // SYSTEM CALL
-    safe_snprintf(output, output_size, "%s %s, %s", mnemonic,
-                  dez_get_register_name(reg1), dez_get_syscall_name(immediate));
+  case DEZ_INST_SYS: // SYSTEM CALL
+    safe_snprintf(output, output_size, "%s %s, %s", mnemonic, dez_get_register_name(reg1), dez_get_syscall_name(immediate));
     break;
 
-  case INST_HALT: // HALT
+  case DEZ_INST_HALT: // HALT
     safe_snprintf(output, output_size, "%s", mnemonic);
     break;
 
-  case INST_NOP: // NO OPERATION
+  case DEZ_INST_INC: // INCREMENT
+    safe_snprintf(output, output_size, "%s %s", mnemonic, dez_get_register_name(reg1));
+    break;
+
+  case DEZ_INST_DEC: // DECREMENT
+    safe_snprintf(output, output_size, "%s %s", mnemonic, dez_get_register_name(reg1));
+    break;
+
+  case DEZ_INST_NOP: // NO OPERATION
     safe_snprintf(output, output_size, "%s", mnemonic);
     break;
 
   default:
-    safe_snprintf(output, output_size, "%s 0x%02X (0x%08X)", mnemonic, opcode,
-                  instruction);
+    safe_snprintf(output, output_size, "%s 0x%02X (0x%08X)", mnemonic, opcode, instruction);
     break;
   }
 }
 
 // Disassemble a range of memory
-void dez_disasm_memory(uint32_t *memory, uint32_t start_addr, uint32_t count,
-                       bool show_addresses) {
+void dez_disasm_memory(uint32_t *memory, uint32_t start_addr, uint32_t count, bool show_addresses) {
   if (!memory)
     return;
 
@@ -195,8 +195,7 @@ void dez_disasm_memory(uint32_t *memory, uint32_t start_addr, uint32_t count,
 }
 
 // Disassemble memory using memory system
-void dez_disasm_memory_system(void *mem_system, uint32_t start_addr,
-                              uint32_t count, bool show_addresses) {
+void dez_disasm_memory_system(void *mem_system, uint32_t start_addr, uint32_t count, bool show_addresses) {
   (void)mem_system;     // Suppress unused parameter warning
   (void)show_addresses; // Suppress unused parameter warning
 

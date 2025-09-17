@@ -12,6 +12,7 @@ DEZ VM is a lightweight 32-bit virtual machine designed for educational purposes
 - **Memory management** with code, data, and stack segments
 - **Binary file format** for compiled programs
 - **Comprehensive test suite** with CTest integration
+- **Enhanced syntax highlighting** with support for binary and hexadecimal numbers
 
 ## Architecture
 
@@ -92,6 +93,21 @@ ctest --output-on-failure
 
 ## Instruction Set
 
+### Number Formats
+DEZ assembly supports multiple number formats for immediate values:
+- **Decimal**: `42`, `255`, `4095`
+- **Hexadecimal**: `0x2A`, `0xFF`, `0xFFF` (prefix with `0x`)
+- **Binary**: `0b101010`, `0b11111111`, `0b111111111111` (prefix with `0b`)
+
+All formats are equivalent and can be used interchangeably:
+```assembly
+MOV R1, 42          ; Decimal
+MOV R2, 0x2A        ; Hexadecimal (same as 42)
+MOV R3, 0b101010    ; Binary (same as 42)
+```
+
+**Note**: Immediate values are limited to 12 bits (0-4095) due to instruction encoding constraints.
+
 ### Data Movement
 - `MOV R1, 42` - Load immediate value 42 into R1
 - `MOV R1, R2` - Copy R2 to R1
@@ -133,9 +149,21 @@ ctest --output-on-failure
 ```assembly
 ; Simple hello world program
 start: ; Entry point
-MOV R0, 42 ; Load value 42
+MOV R0, 42 ; Load value 42 (decimal)
 SYS R0, PRINT ; Print the value
 HALT ; Stop execution
+```
+
+### Number Format Examples
+```assembly
+; Demonstrating different number formats
+start:
+MOV R0, 42          ; Decimal
+MOV R1, 0x2A        ; Hexadecimal (same as 42)
+MOV R2, 0b101010    ; Binary (same as 42)
+ADD R3, R0, R1      ; 42 + 42 = 84
+SYS R3, PRINT       ; Print result
+HALT
 ```
 
 ### Arithmetic Operations
@@ -316,31 +344,29 @@ include/
 3. Run the full test suite with `ctest --output-on-failure`
 4. Ensure all existing tests continue to pass
 
-## Recent Improvements
-
-### Version 2.0 Features
-- **Label Support**: Full label definition and resolution with two-pass assembly
-- **Comment Support**: Both full-line (`;`) and inline comments
-- **Advanced Instruction Encoding**: Fixed register R0 vs immediate 0 ambiguity
-- **Comprehensive Test Suite**: Complete test coverage with CTest integration
-- **Improved Error Handling**: Better error messages and validation
-- **PC Management**: Fixed program counter handling for all instruction types
-- **Loop Support**: Proper conditional and unconditional jump handling
-
-### Technical Improvements
-- **Two-Pass Assembly**: Proper forward reference resolution
-- **Bit 11 Flag Encoding**: Unambiguous register vs immediate mode distinction
-- **Register R0 Fix**: Correct handling of register 0 in arithmetic operations
-- **PC Increment Logic**: Centralized program counter management
-- **Memory Safety**: Improved bounds checking and error handling
-
-## Limitations
 
 - Maximum program size: 1024 instructions (4KB code segment)
 - Maximum immediate value: 2047 (11-bit range due to encoding scheme)
 - No floating-point arithmetic
 - No dynamic memory allocation
 - Limited error handling for some edge cases
+
+## Syntax Highlighting
+
+DEZ VM includes comprehensive syntax highlighting support for VS Code with enhanced support for binary and hexadecimal numbers.
+
+### Features
+- **Multiple number formats**: Decimal, hexadecimal (`0x`), and binary (`0b`) with distinct colors
+- **Two built-in themes**: Dark and light themes optimized for different environments
+- **Comprehensive highlighting**: Instructions, registers, labels, system calls, strings, and more
+- **Easy installation**: Available as a VS Code extension package
+
+### Installation
+1. Install the VS Code extension from `syntax-highlighting/dez-assembly-1.0.0.vsix`
+2. Or install from the `syntax-highlighting/vscode-extension/` directory in development mode
+
+### Preview
+See `syntax-highlighting/syntax-preview.html` for a visual demonstration of the syntax highlighting.
 
 ## License
 

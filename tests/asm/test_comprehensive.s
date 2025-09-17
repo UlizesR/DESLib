@@ -10,6 +10,26 @@ start:
     MUL R4, R0, R1      ; R4 = 50
     DIV R5, R0, R1      ; R5 = 2
 
+    ; Arithmetic with immediate values
+    ADD R2, R0, 5       ; R2 = 10 + 5 = 15
+    SUB R3, R0, 3       ; R3 = 10 - 3 = 7
+    MUL R4, R0, 4       ; R4 = 10 * 4 = 40
+    DIV R5, R0, 2       ; R5 = 10 / 2 = 5
+
+    ; Number formats (decimal, hex, binary)
+    MOV R0, 42          ; Decimal
+    MOV R1, 0x2A        ; Hex 42
+    MOV R2, 0b101010    ; Binary 42
+    ADD R3, R0, R1      ; 42 + 42 = 84
+    ADD R4, R0, R2      ; 42 + 42 = 84
+
+    ; Edge cases
+    MOV R5, 0           ; Zero
+    MOV R6, 0x0         ; Hex zero
+    MOV R7, 0b0         ; Binary zero
+    DIV R8, R0, 1       ; Division by 1
+    MUL R9, R0, 0       ; Multiplication by 0
+
     ; Memory operations
     STORE R2, 256       ; Store 15 at address 256
     LOAD R6, 256        ; R6 = 15
@@ -34,20 +54,40 @@ start:
     CALL my_function
     MOV R1, 20          ; This should execute after return
 
+    ; Unconditional jumps
+    MOV R2, 1
+    JMP skip_unconditional
+    MOV R3, 2           ; This should be skipped
+skip_unconditional:
+    MOV R4, 3           ; This should execute
+
     ; Conditional jumps
-    MOV R2, 10
-    MOV R3, 5
-    CMP R2, R3          ; 10 > 5
-    JG greater_case
-    MOV R4, 0           ; Should be skipped
+    MOV R5, 5
+    MOV R6, 5
+    CMP R5, R6          ; 5 == 5
+    JZ equal_case
+    MOV R7, 0           ; Should be skipped
     JMP end_conditional
-greater_case:
-    MOV R4, 1           ; Should execute
+equal_case:
+    MOV R7, 1           ; Should execute
 end_conditional:
+
+    ; Loop functionality
+    MOV R8, 0           ; Counter
+    MOV R9, 0           ; Sum
+loop_start:
+    ADD R9, R9, 2       ; Add 2 to sum
+    ADD R8, R8, 1       ; Increment counter
+    CMP R8, 3           ; Check if counter == 3
+    JZ loop_end
+    JMP loop_start
+loop_end:
 
     ; System calls
     SYS R0, PRINT       ; Print R0 (10)
     SYS R1, PRINT       ; Print R1 (20)
+    MOV R10, 65
+    SYS R10, PRINT_CHAR ; Print character 'A'
 
     HALT
 
