@@ -1,0 +1,9 @@
+[submodule "external/eigen"]
+	path = external/eigen
+	url = https://gitlab.com/libeigen/eigen.git
+[submodule "external/Fastor"]
+	path = external/Fastor
+	url = https://github.com/romeric/Fastor.git
+[submodule "external/sleef"]
+	path = external/sleef
+	url = https://github.com/shibatch/sleef.git
